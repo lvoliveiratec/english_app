@@ -47,6 +47,8 @@ The `docs/` folder stores project history, decisions, and architecture notes:
 
 The first English knowledge base lives in `kb/english/`.
 
+The project architecture folder lives in `architecture/`.
+
 ## Next technical steps
 
 1. Create a backend with real users, student profiles, teacher profiles, and admin profiles.

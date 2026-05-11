@@ -25,6 +25,7 @@ This document records what we are building and why each step was taken.
 - Lessons page organizes practice by vocabulary, speaking, reading, writing, listening, and pronunciation.
 - Clarified the login flow so sign in routes to the student dashboard, not the public AI Coach method page.
 - Added a dashboard hero and script cache-buster to make the post-login destination clear during testing.
+- Added the `architecture/` folder with system overview, project structure, agent architecture, data/RAG architecture, student flow, Mermaid diagrams, and implementation roadmap.
 
 ## Important Decisions
 
