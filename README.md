@@ -1,51 +1,54 @@
 # FluentPath English
 
-Primeiro prototipo de um app/site de ingles com:
+First prototype of an English learning app/site with:
 
-- Pagina principal
-- Login demonstrativo
-- Area de cursos
-- IA Coach simulada
-- Treino de pronuncia com gravacao local de audio
-- Gravacao local de audio/video para aulas presenciais, com consentimento
+- Home page
+- Demonstration login
+- Courses page
+- Simulated AI Coach
+- Pronunciation practice with local audio recording
+- Local audio/video recording for in-person classes, with consent
 
-## Como abrir
+## How to open
 
-Abra o arquivo `index.html` no navegador.
+Open `index.html` in a browser.
 
-Alguns navegadores so permitem microfone/camera em `localhost` ou HTTPS. Se a gravacao nao abrir direto pelo arquivo, rode um servidor estatico local quando tiver Node, Python ou outra ferramenta instalada.
+Some browsers only allow microphone/camera access on `localhost` or HTTPS. If recording does not work directly from the file, run the local Node server.
 
-## Como rodar com Node
+## How to run with Node
 
-Este projeto usa Node via nvm. Se o terminal ainda nao reconhece `node`, rode:
+This project uses Node through nvm. If your terminal does not recognize `node`, run:
 
 ```bash
 source ~/.nvm/nvm.sh
 nvm use
 ```
 
-Depois:
+Then:
 
 ```bash
 npm start
 ```
 
-O site abre em `http://127.0.0.1:5173`.
+The site runs at `http://127.0.0.1:5173`.
 
-## Documentacao
+## Documentation
 
-A pasta `docs/` guarda o historico e as decisoes do projeto:
+The `docs/` folder stores project history, decisions, and architecture notes:
 
 - `docs/000-process-log.md`
 - `docs/001-product-vision.md`
 - `docs/002-technical-roadmap.md`
+- `docs/003-agent-roles.md`
+- `docs/004-mcp-kb-research.md`
+- `docs/005-rag-and-data-architecture.md`
 
-## Proximos passos tecnicos
+## Next technical steps
 
-1. Criar backend com usuarios reais, perfis de aluno e professores.
-2. Salvar progresso das licoes em banco de dados.
-3. Enviar audios e videos autorizados para processamento.
-4. Transcrever aulas e tentativas de pronuncia.
-5. Gerar feedback personalizado da IA com historico do aluno.
-6. Criar painel do professor com resumo de evolucao, dificuldades e recomendacoes.
-7. Adicionar politicas de privacidade, consentimento, retencao e exclusao de gravacoes.
+1. Create a backend with real users, student profiles, teacher profiles, and admin profiles.
+2. Store lesson progress in a database.
+3. Upload authorized audio and video for processing.
+4. Transcribe classes and pronunciation attempts.
+5. Generate personalized AI feedback using the student's history.
+6. Create a teacher dashboard with progress summaries, difficulties, and recommendations.
+7. Add privacy, consent, retention, and recording deletion policies.

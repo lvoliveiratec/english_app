@@ -1,33 +1,40 @@
 # Technical Roadmap
 
-## Fase 1: Prototipo navegavel
+## Phase 1: Navigable Prototype
 
-- HTML, CSS e JavaScript puro.
-- Sem backend.
-- Sem banco de dados.
-- Gravacoes locais no navegador.
-- Dados simples em `localStorage`.
+- Plain HTML, CSS, and JavaScript.
+- No backend.
+- No database.
+- Local browser recordings.
+- Simple data in `localStorage`.
 
-## Fase 2: Base real do app
+## Phase 2: Real App Foundation
 
-- Criar backend.
-- Criar autentificacao.
-- Criar perfis de aluno, professor e administrador.
-- Criar banco de dados para progresso, cursos, licoes e atividades.
-- Criar upload seguro para audio/video autorizado.
+- Create the backend.
+- Create authentication.
+- Create student, teacher, and administrator profiles.
+- Create the database for progress, courses, lessons, and activities.
+- Create secure upload for authorized audio/video.
 
-## Fase 3: IA aplicada
+## Phase 3: Applied AI
 
-- Transcrever audio das aulas.
-- Analisar pronuncia.
-- Identificar erros recorrentes.
-- Gerar recomendacoes diarias para cada aluno.
-- Criar resumo para professores.
+- Transcribe class audio.
+- Analyze pronunciation.
+- Identify recurring errors.
+- Generate daily recommendations for each student.
+- Create summaries for teachers.
 
-## Fase 4: Privacidade e operacao
+## Phase 4: Privacy And Operations
 
-- Consentimento explicito para gravacoes.
-- Controle de acesso por perfil.
-- Retencao de midia.
-- Exclusao de dados quando solicitada.
-- Auditoria de quem acessou gravacoes e analises.
+- Explicit consent for recordings.
+- Role-based access control.
+- Media retention.
+- Data deletion when requested.
+- Audit logging for recording and analysis access.
+
+## Phase 5: Agentic Product Architecture
+
+- Define frontend, backend, database, and AI Coach agent responsibilities.
+- Build knowledge bases for curriculum, platform help, correction style, and privacy policies.
+- Add RAG retrieval for curriculum, teacher materials, student memory, and session summaries.
+- Keep student-specific memory isolated per student and permissioned server-side.

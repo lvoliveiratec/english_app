@@ -21,26 +21,26 @@ const courses = [
   {
     title: "English Foundations",
     level: "Beginner",
-    duration: "6 semanas",
+    duration: "6 weeks",
     color: "#2563eb",
     description:
-      "Vocabulário essencial, frases úteis, listening curto e gramática básica para sair do zero.",
+      "Essential vocabulary, useful phrases, short listening practice, and basic grammar for true beginners.",
   },
   {
     title: "Speaking Confidence",
     level: "Intermediate",
-    duration: "8 semanas",
+    duration: "8 weeks",
     color: "#16855f",
     description:
-      "Conversas guiadas, correção de pronúncia e treino para responder sem traduzir palavra por palavra.",
+      "Guided conversations, pronunciation correction, and practice answering without translating word by word.",
   },
   {
     title: "Real Life English",
     level: "Practical",
-    duration: "10 semanas",
+    duration: "10 weeks",
     color: "#e25645",
     description:
-      "Situações reais: trabalho, viagem, reuniões, small talk, entrevistas e aulas com feedback da IA.",
+      "Real situations: work, travel, meetings, small talk, interviews, and classes with AI feedback.",
   },
 ];
 
@@ -99,8 +99,8 @@ function renderCourses() {
 }
 
 function refreshStudentCopy() {
-  studentGreeting.textContent = `Oi, ${state.userName}.`;
-  studentBriefText.textContent = `Bom te ver aqui, ${state.userName}. Ontem você estudou 28 minutos e completou 3 atividades. Hoje o foco é pronúncia, listening e confiança em conversas curtas.`;
+  studentGreeting.textContent = `Hi, ${state.userName}.`;
+  studentBriefText.textContent = `Good to see you here, ${state.userName}. Yesterday you studied for 28 minutes and completed 3 activities. Today the focus is pronunciation, listening, and confidence in short conversations.`;
 }
 
 function choosePhrase() {
@@ -108,19 +108,19 @@ function choosePhrase() {
   const available = phrases.filter((phrase) => phrase !== currentPhrase);
   const next = available[Math.floor(Math.random() * available.length)];
   practicePhrase.textContent = next;
-  voiceFeedback.textContent = "Nova frase pronta. Grave sua tentativa quando quiser.";
+  voiceFeedback.textContent = "New phrase ready. Record your attempt whenever you want.";
 }
 
 async function recordVoiceSample() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    voiceFeedback.textContent = "Seu navegador não liberou gravação de áudio para este protótipo.";
+    voiceFeedback.textContent = "Your browser did not allow audio recording for this prototype.";
     return;
   }
 
   try {
     recordVoiceButton.disabled = true;
-    recordVoiceButton.textContent = "Gravando...";
-    voiceFeedback.textContent = "Gravando 5 segundos. Fale a frase com calma.";
+    recordVoiceButton.textContent = "Recording...";
+    voiceFeedback.textContent = "Recording for 5 seconds. Say the phrase calmly.";
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
@@ -131,25 +131,25 @@ async function recordVoiceSample() {
     recorder.addEventListener("stop", () => {
       stream.getTracks().forEach((track) => track.stop());
       recordVoiceButton.disabled = false;
-      recordVoiceButton.textContent = "Gravar voz";
+      recordVoiceButton.textContent = "Record voice";
       voiceFeedback.textContent =
-        "Feedback demo: boa energia na fala. Próximo treino: alongar o som de 'world' e fechar melhor o final de 'thought'.";
+        "Demo feedback: strong speaking energy. Next drill: stretch the sound in 'world' and finish the ending of 'thought' more clearly.";
     });
   } catch (error) {
     recordVoiceButton.disabled = false;
-    recordVoiceButton.textContent = "Gravar voz";
-    voiceFeedback.textContent = "Não consegui acessar o microfone. Verifique a permissão do navegador.";
+    recordVoiceButton.textContent = "Record voice";
+    voiceFeedback.textContent = "I could not access the microphone. Check your browser permissions.";
   }
 }
 
 async function startClassRecording(kind) {
   if (!consentCheck.checked) {
-    classFeedback.textContent = "Marque o consentimento antes de iniciar a gravação da aula.";
+    classFeedback.textContent = "Check the consent box before starting the class recording.";
     return;
   }
 
   if (!navigator.mediaDevices?.getUserMedia) {
-    classFeedback.textContent = "Seu navegador não liberou gravação de mídia para este protótipo.";
+    classFeedback.textContent = "Your browser did not allow media recording for this prototype.";
     return;
   }
 
@@ -172,7 +172,7 @@ async function startClassRecording(kind) {
       const blob = new Blob(state.chunks, { type });
       const minutes = Math.max(1, Math.round(blob.size / 85000));
 
-      classFeedback.textContent = `Gravação finalizada. Demo local pronta para análise: cerca de ${minutes} min de material capturado.`;
+      classFeedback.textContent = `Recording finished. Local demo ready for analysis: about ${minutes} min of captured material.`;
       classPreview.classList.remove("active");
       classPreview.srcObject = null;
       state.mediaStream.getTracks().forEach((track) => track.stop());
@@ -195,11 +195,11 @@ async function startClassRecording(kind) {
     videoClassButton.disabled = true;
     classFeedback.textContent =
       kind === "video"
-        ? "Gravando vídeo da aula. Pare quando terminar."
-        : "Gravando áudio da aula. Pare quando terminar.";
+        ? "Recording class video. Stop when finished."
+        : "Recording class audio. Stop when finished.";
   } catch (error) {
     classFeedback.textContent =
-      "Não consegui iniciar a gravação. Verifique câmera, microfone e permissões do navegador.";
+      "I could not start the recording. Check camera, microphone, and browser permissions.";
   }
 }
 
@@ -215,7 +215,7 @@ window.addEventListener("hashchange", handleRouteChange);
 loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
-  state.userName = formData.get("name")?.toString().trim() || "Aluno";
+  state.userName = formData.get("name")?.toString().trim() || "Student";
   localStorage.setItem("fluentpath:user", state.userName);
   refreshStudentCopy();
   window.location.hash = "coach";

@@ -1,34 +1,34 @@
 # Product Vision
 
-FluentPath English sera uma plataforma de aprendizado de ingles acompanhada por IA.
+FluentPath English will be an English learning platform guided by AI.
 
-## Experiencia desejada
+## Desired Experience
 
-Quando o aluno entra no site, a IA deve reconhecer o historico dele e iniciar com algo parecido com:
+When a student enters the site, the AI should recognize their history and start with something like:
 
-> Oi Lucas, bom te ver aqui. Ontem voce foi muito bem. Aqui estao os pontos que voce pode melhorar hoje.
+> Hi Lucas, good to see you here. Yesterday you did very well. Here are the points you can improve today.
 
-A IA deve acompanhar:
+The AI should track:
 
-- Licoes feitas dentro do site.
-- Respostas certas e erradas.
-- Tempo de estudo.
-- Palavras novas aprendidas.
-- Pronuncia em treinos curtos.
-- Audio de aulas presenciais, quando houver consentimento.
-- Video de aulas ou praticas, se isso fizer sentido para analise futura.
+- Lessons completed inside the site.
+- Correct and incorrect answers.
+- Study time.
+- New words learned.
+- Pronunciation in short drills.
+- Audio from in-person classes, when consent exists.
+- Video from classes or practice sessions, when useful for future analysis.
 
-## Primeira fase
+## First Phase
 
-A primeira fase e um site navegavel que demonstra o conceito:
+The first phase is a navigable site that demonstrates the concept:
 
-- Principal
+- Home
 - Login
-- Cursos
-- IA Coach
-- Treino de pronuncia
-- Gravacao local de aula
+- Courses
+- AI Coach
+- Pronunciation practice
+- Local class recording
 
-## Futuro
+## Future
 
-O objetivo final e a IA montar um plano vivo para cada aluno, com recomendacoes de licoes, pronuncia, revisao de vocabulario, listening e conversacao.
+The final goal is for AI to build a living plan for each student, with recommendations for lessons, pronunciation, vocabulary review, listening, and conversation.

@@ -1,20 +1,24 @@
 # Process Log
 
-Este documento registra o que estamos construindo e por que cada passo foi feito.
+This document records what we are building and why each step was taken.
 
 ## 2026-05-11
 
-- Criamos o primeiro prototipo estatico do FluentPath English.
-- O site inclui pagina principal, login demonstrativo, cursos e area de IA Coach.
-- A IA Coach ainda e uma simulacao local, mas ja mostra a experiencia desejada: saudacao personalizada, resumo de progresso e sugestoes de pronuncia.
-- Adicionamos gravacao local de voz para treino de pronuncia.
-- Adicionamos gravacao local de audio/video para aulas presenciais, com aviso de consentimento.
-- Instalamos Node via nvm para rodar ferramentas locais sem depender de instalacao global do sistema.
-- Preparamos scripts npm e um servidor local simples com Node.
-- Iniciamos a estrutura de documentacao em `docs/`.
+- Created the first static prototype of FluentPath English.
+- The site includes a home page, demonstration login, courses, and an AI Coach area.
+- The AI Coach is still a local simulation, but it already shows the desired experience: personalized greeting, progress summary, and pronunciation suggestions.
+- Added local voice recording for pronunciation practice.
+- Added local audio/video recording for in-person classes, with a consent notice.
+- Installed Node through nvm to run local tools without relying on a global system installation.
+- Prepared npm scripts and a simple local Node server.
+- Started the documentation structure in `docs/`.
+- Confirmed the product, site, and documentation should be English-only.
+- Started architectural planning for frontend, backend, database, RAG, knowledge bases, and the student-facing AI Coach.
 
-## Decisoes importantes
+## Important Decisions
 
-- O prototipo atual nao envia audio ou video para nenhum servidor.
-- Gravacoes precisam ter consentimento claro de aluno e professor.
-- Antes de usar IA real com audio/video, o app precisa de backend, autentificacao, politicas de privacidade e regras de retencao/exclusao.
+- The current prototype does not send audio or video to any server.
+- Recordings need clear consent from both student and teacher.
+- Before using real AI with audio/video, the app needs a backend, authentication, privacy policies, and retention/deletion rules.
+- Student-specific AI memory must be permissioned and isolated per student.
+- Raw media should be treated as sensitive data; AI should prefer derived artifacts such as transcripts, summaries, and pronunciation metrics when possible.
