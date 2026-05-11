@@ -464,6 +464,29 @@ input {
   padding: clamp(2rem, 5vw, 4rem) 0;
 }
 
+.student-dashboard-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(2rem, 4vw, 3rem) 0 0;
+}
+
+.student-dashboard-hero h1 {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(2.25rem, 5vw, 4.3rem);
+  line-height: 1;
+}
+
+.student-dashboard-hero p:last-child {
+  max-width: 48rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
 .login-box {
   display: grid;
   gap: 1rem;
@@ -843,6 +866,7 @@ button:disabled {
   .courses-heading,
   .panel-heading,
   .split-heading,
+  .student-dashboard-hero,
   .lesson-footer {
     align-items: stretch;
     flex-direction: column;

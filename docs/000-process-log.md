@@ -23,6 +23,8 @@ This document records what we are building and why each step was taken.
 - Login now sends students to a dashboard.
 - Dashboard includes the first AI Teacher contact and an initial placement questionnaire.
 - Lessons page organizes practice by vocabulary, speaking, reading, writing, listening, and pronunciation.
+- Clarified the login flow so sign in routes to the student dashboard, not the public AI Coach method page.
+- Added a dashboard hero and script cache-buster to make the post-login destination clear during testing.
 
 ## Important Decisions
 

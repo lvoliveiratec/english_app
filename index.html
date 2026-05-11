@@ -166,7 +166,7 @@
                 authentication with student, teacher, and administrator profiles.
               </p>
             </div>
-            <form class="login-box" id="loginForm">
+            <form class="login-box" id="loginForm" action="#dashboard">
               <label>
                 Name
                 <input type="text" name="name" value="Lucas" autocomplete="name" required />
@@ -290,6 +290,18 @@
         </section>
 
         <section class="page" id="dashboard" data-page>
+          <div class="student-dashboard-hero">
+            <div>
+              <p class="eyebrow">Student dashboard</p>
+              <h1>Your first AI Teacher session starts here.</h1>
+              <p>
+                This is the student's private learning area. After sign in, the AI Teacher begins
+                with a short welcome, checks the student's starting point, and recommends the first
+                lessons.
+              </p>
+            </div>
+            <a class="secondary-action" href="#lessons">Open lessons</a>
+          </div>
           <div class="coach-layout">
             <aside class="student-brief">
               <p class="eyebrow">Student summary</p>
@@ -441,6 +453,6 @@
       </main>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=student-dashboard-login"></script>
   </body>
 </html>

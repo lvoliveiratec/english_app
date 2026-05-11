@@ -157,6 +157,15 @@ function setRoute(routeName) {
   }
 }
 
+function navigateTo(routeName) {
+  if (window.location.hash === `#${routeName}`) {
+    setRoute(routeName);
+    return;
+  }
+
+  window.location.hash = routeName;
+}
+
 function handleRouteChange() {
   setRoute(window.location.hash.replace("#", "") || "home");
 }
@@ -336,7 +345,7 @@ loginForm.addEventListener("submit", (event) => {
   localStorage.setItem("fluentpath:user", state.userName);
   localStorage.setItem("fluentpath:signedIn", "true");
   refreshStudentCopy();
-  window.location.hash = "dashboard";
+  navigateTo("dashboard");
 });
 
 courseGrid.addEventListener("click", (event) => {
@@ -348,7 +357,7 @@ courseGrid.addEventListener("click", (event) => {
 
   event.preventDefault();
   sessionStorage.setItem("fluentpath:selectedCourse", link.dataset.courseSlug);
-  window.location.hash = "course";
+  navigateTo("course");
 });
 
 placementForm.addEventListener("submit", (event) => {
