@@ -35,6 +35,8 @@
 ## Phase 5: Agentic Product Architecture
 
 - Define frontend, backend, database, and AI Coach agent responsibilities.
+- Define the AI Teacher Agent as the instructional agent for teaching, correction, speech feedback, and writing feedback.
 - Build knowledge bases for curriculum, platform help, correction style, and privacy policies.
+- Build and expand the English KB in `kb/english/`.
 - Add RAG retrieval for curriculum, teacher materials, student memory, and session summaries.
 - Keep student-specific memory isolated per student and permissioned server-side.

@@ -14,6 +14,8 @@ This document records what we are building and why each step was taken.
 - Started the documentation structure in `docs/`.
 - Confirmed the product, site, and documentation should be English-only.
 - Started architectural planning for frontend, backend, database, RAG, knowledge bases, and the student-facing AI Coach.
+- Added the AI Teacher Agent as the instructional agent responsible for lessons, speech checks, spelling, writing feedback, corrections, and student direction.
+- Created the first English KB in `kb/english/` with CEFR, grammar, pronunciation, vocabulary, spelling/writing, assessment, correction, and lesson pattern modules.
 
 ## Important Decisions
 

@@ -47,6 +47,7 @@ Start with Postgres + pgvector if operational simplicity matters. Move to a dedi
 Indexes:
 
 - Curriculum knowledge.
+- English teacher knowledge from `kb/english/`.
 - Teacher materials.
 - Student memory.
 - Session transcripts and summaries.
@@ -87,3 +88,18 @@ Recommended flow:
 - Prefer derived artifacts for AI context: transcripts, pronunciation metrics, and summaries.
 - Maintain audit logs for teacher/admin/media access.
 - Support deletion across database rows, object storage, vector records, transcripts, summaries, and cached exports.
+
+## AI Teacher Retrieval Context
+
+The AI Teacher Agent should receive a compact context packet assembled server-side:
+
+- Student profile and level.
+- Current lesson objective.
+- Recent mistakes and due reviews.
+- Relevant English KB chunks.
+- Relevant curriculum chunks.
+- Authorized teacher notes.
+- Speech or writing analysis output.
+- Privacy-safe session summary.
+
+The AI Teacher Agent should never retrieve directly from raw storage. It should receive only filtered, authorized, task-specific context.

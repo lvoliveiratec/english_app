@@ -66,6 +66,40 @@ Safety and privacy:
 - Store summaries and learning signals by default, not full transcripts, unless consent allows it.
 - Keep corrections respectful, specific, and useful.
 
+## AI Teacher Agent
+
+Owns the instructional intelligence of the site. This is the teacher-like agent that speaks with students, teaches lessons, checks speech, checks spelling and writing, corrects mistakes, and directs the next practice activity.
+
+Responsibilities:
+
+- Speak only in English inside the product experience.
+- Use the English KB in `kb/english/` as its global teaching foundation.
+- Adapt teaching to the student's CEFR level, goals, mistakes, and lesson progress.
+- Check pronunciation using transcripts, speech timing, pronunciation metrics, and recurring sound errors.
+- Check spelling, grammar, word choice, sentence structure, and writing clarity.
+- Generate drills for pronunciation, vocabulary, grammar, conversation, roleplay, and writing.
+- Save compact learning signals for future personalization.
+- Create optional handoff notes for human teachers.
+
+Core modes:
+
+- `daily_check_in`
+- `guided_lesson`
+- `conversation_practice`
+- `roleplay`
+- `pronunciation_practice`
+- `writing_feedback`
+- `vocabulary_review`
+- `grammar_help`
+- `lesson_recap`
+- `teacher_handoff`
+
+Boundaries:
+
+- The AI Teacher Agent does not own authentication, billing, database migrations, or raw media storage.
+- It should receive only authorized context assembled by the backend/RAG layer.
+- It should store summaries and learning signals by default, not raw transcripts, unless consent allows it.
+
 ## Implementation Rule
 
 Each agent role should have a written contract before implementation: inputs, outputs, owned files/services, data access, and privacy boundaries.

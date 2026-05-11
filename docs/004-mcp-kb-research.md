@@ -63,6 +63,7 @@ Global KBs:
 - Correction style guide: tone, correction frequency, examples, and when to interrupt.
 - Platform help: login, lessons, progress, subscriptions, teacher workflows.
 - Privacy and consent policies.
+- English teacher KB: grammar, pronunciation, vocabulary, spelling, writing, assessment rubrics, and lesson patterns.
 
 Scoped KBs:
 
@@ -70,6 +71,23 @@ Scoped KBs:
 - Student memory by student only.
 - Class transcripts and summaries by student/class permission.
 - Support history by user permission.
+
+## Current KB Structure
+
+The first English KB is stored in `kb/english/`.
+
+Initial modules:
+
+- CEFR level guide.
+- Grammar syllabus.
+- Pronunciation guide.
+- Vocabulary themes.
+- Writing and spelling guide.
+- Speaking assessment rubric.
+- Correction policy.
+- Lesson patterns.
+
+This KB is global and can be shared across students. Student-specific memories must be stored separately and retrieved only through permissioned RAG.
 
 ## Research Tasks
 
