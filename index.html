@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FluentPath English</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#home" aria-label="FluentPath English home">
+          <span class="brand-mark">F</span>
+          <span>FluentPath English</span>
+        </a>
+        <nav class="nav-links" aria-label="Principal">
+          <a href="#home" data-route="home">Principal</a>
+          <a href="#courses" data-route="courses">Cursos</a>
+          <a href="#coach" data-route="coach">IA Coach</a>
+          <a href="#login" data-route="login">Login</a>
+        </nav>
+        <button class="menu-button" type="button" aria-label="Abrir menu" id="menuButton">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </header>
+
+      <main>
+        <section class="page active" id="home" data-page>
+          <div class="hero-band">
+            <div class="hero-copy">
+              <p class="eyebrow">English only learning platform</p>
+              <h1>Um site de inglês que aprende junto com cada aluno.</h1>
+              <p class="hero-text">
+                O aluno pratica lições, pronúncia, conversação e aulas presenciais enquanto a IA
+                acompanha evolução, pontos fracos e próximos treinos.
+              </p>
+              <div class="hero-actions">
+                <a class="primary-action" href="#login">Entrar como aluno</a>
+                <a class="secondary-action" href="#courses">Ver cursos</a>
+              </div>
+            </div>
+            <div class="coach-panel" aria-label="Resumo da IA para o aluno">
+              <div class="coach-header">
+                <div>
+                  <span class="status-dot"></span>
+                  IA ativa
+                </div>
+                <span>Hoje</span>
+              </div>
+              <div class="coach-message">
+                <p class="message-name">Oi, Lucas. Bom te ver aqui!</p>
+                <p>
+                  Ontem você foi muito bem em perguntas com “did”. Sua pronúncia melhorou, mas
+                  quero treinar as palavras <strong>thought</strong>, <strong>world</strong> e
+                  <strong>comfortable</strong> com você.
+                </p>
+              </div>
+              <div class="signal-visual" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="metric-grid">
+                <div>
+                  <strong>76%</strong>
+                  <span>Pronúncia</span>
+                </div>
+                <div>
+                  <strong>42</strong>
+                  <span>Novas palavras</span>
+                </div>
+                <div>
+                  <strong>8d</strong>
+                  <span>Sequência</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-wrap">
+            <div class="section-heading">
+              <p class="eyebrow">Como a primeira versão funciona</p>
+              <h2>Uma base clara para evoluir para IA real.</h2>
+            </div>
+            <div class="feature-grid">
+              <article class="feature-card">
+                <span class="feature-icon">01</span>
+                <h3>Lições monitoradas</h3>
+                <p>
+                  O site registra progresso, respostas, tempo de estudo e dificuldades para montar
+                  recomendações personalizadas.
+                </p>
+              </article>
+              <article class="feature-card">
+                <span class="feature-icon">02</span>
+                <h3>Pronúncia guiada</h3>
+                <p>
+                  O aluno grava frases, recebe feedback inicial e pode repetir os treinos sugeridos
+                  pelo coach.
+                </p>
+              </article>
+              <article class="feature-card">
+                <span class="feature-icon">03</span>
+                <h3>Aulas gravadas</h3>
+                <p>
+                  Com consentimento, áudio e vídeo da aula podem alimentar análises de fala,
+                  vocabulário e fluência.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="login" data-page>
+          <div class="auth-layout">
+            <div class="auth-copy">
+              <p class="eyebrow">Portal do aluno</p>
+              <h1>Entre para continuar seu treino de inglês.</h1>
+              <p>
+                Nesta primeira versão o login é demonstrativo. Depois ele pode virar autenticação
+                real com perfis de aluno, professor e administrador.
+              </p>
+            </div>
+            <form class="login-box" id="loginForm">
+              <label>
+                Nome
+                <input type="text" name="name" value="Lucas" autocomplete="name" required />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  name="email"
+                  value="lucas@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </label>
+              <label>
+                Senha
+                <input type="password" name="password" value="english123" autocomplete="current-password" />
+              </label>
+              <button class="primary-action full-width" type="submit">Entrar</button>
+              <p class="form-note">
+                Ao entrar, você verá uma saudação personalizada da IA com o progresso salvo neste
+                navegador.
+              </p>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="courses" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Cursos</p>
+                <h1>English only, do básico à conversação.</h1>
+              </div>
+              <a class="secondary-action" href="#coach">Abrir IA Coach</a>
+            </div>
+            <div class="course-grid" id="courseGrid"></div>
+          </div>
+        </section>
+
+        <section class="page" id="coach" data-page>
+          <div class="coach-layout">
+            <aside class="student-brief">
+              <p class="eyebrow">Resumo do aluno</p>
+              <h1 id="studentGreeting">Oi, Lucas.</h1>
+              <p id="studentBriefText">
+                Ontem você estudou 28 minutos e completou 3 atividades. Hoje o foco é pronúncia e
+                confiança em conversas curtas.
+              </p>
+              <div class="progress-stack">
+                <div>
+                  <span>Fluência</span>
+                  <strong>64%</strong>
+                  <meter min="0" max="100" value="64"></meter>
+                </div>
+                <div>
+                  <span>Listening</span>
+                  <strong>71%</strong>
+                  <meter min="0" max="100" value="71"></meter>
+                </div>
+                <div>
+                  <span>Pronúncia</span>
+                  <strong>76%</strong>
+                  <meter min="0" max="100" value="76"></meter>
+                </div>
+              </div>
+            </aside>
+
+            <div class="coach-workspace">
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Treino recomendado</p>
+                    <h2>Pronúncia com feedback</h2>
+                  </div>
+                  <span class="pill">Demo local</span>
+                </div>
+                <div class="practice-card">
+                  <p class="practice-label">Leia em voz alta</p>
+                  <blockquote id="practicePhrase">
+                    I thought the world was comfortable enough for a short conversation.
+                  </blockquote>
+                  <div class="practice-actions">
+                    <button class="secondary-action" type="button" id="newPhraseButton">
+                      Nova frase
+                    </button>
+                    <button class="primary-action" type="button" id="recordVoiceButton">
+                      Gravar voz
+                    </button>
+                  </div>
+                  <p class="feedback-text" id="voiceFeedback">
+                    Grave uma tentativa para receber um feedback inicial.
+                  </p>
+                </div>
+              </section>
+
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Aula presencial</p>
+                    <h2>Gravar áudio ou vídeo</h2>
+                  </div>
+                  <span class="pill warning">Consentimento obrigatório</span>
+                </div>
+                <div class="consent-row">
+                  <label class="check-row">
+                    <input type="checkbox" id="consentCheck" />
+                    <span>Aluno e professor autorizaram a gravação desta aula.</span>
+                  </label>
+                </div>
+                <div class="recording-controls">
+                  <button class="secondary-action" type="button" id="audioClassButton">
+                    Gravar áudio
+                  </button>
+                  <button class="secondary-action" type="button" id="videoClassButton">
+                    Gravar vídeo
+                  </button>
+                  <button class="danger-action" type="button" id="stopClassButton" disabled>
+                    Parar
+                  </button>
+                </div>
+                <video class="preview-video" id="classPreview" playsinline muted></video>
+                <p class="feedback-text" id="classFeedback">
+                  A gravação fica apenas no navegador neste protótipo.
+                </p>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
