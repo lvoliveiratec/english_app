@@ -43,6 +43,7 @@ The `docs/` folder stores project history, decisions, and architecture notes:
 - `docs/004-mcp-kb-research.md`
 - `docs/005-rag-and-data-architecture.md`
 - `docs/006-ai-teacher-agent.md`
+- `docs/007-page-and-student-flow.md`
 
 The first English knowledge base lives in `kb/english/`.
 

@@ -386,14 +386,18 @@ input {
 }
 
 .feature-grid,
-.course-grid {
+.course-grid,
+.review-grid,
+.lesson-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .feature-card,
-.course-card {
+.course-card,
+.review-card,
+.lesson-card {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 1.15rem;
@@ -417,10 +421,35 @@ input {
 }
 
 .feature-card p,
-.course-card p {
+.course-card p,
+.review-card p,
+.lesson-card p {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.split-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.review-card {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 12rem;
+}
+
+.review-card strong {
+  align-self: end;
+}
+
+.review-card span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .auth-layout,
@@ -448,7 +477,9 @@ input {
   font-weight: 800;
 }
 
-.login-box input {
+.login-box input,
+.assessment-form select,
+.assessment-form textarea {
   min-height: 3rem;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -458,9 +489,27 @@ input {
   outline: none;
 }
 
-.login-box input:focus {
+.login-box input:focus,
+.assessment-form select:focus,
+.assessment-form textarea:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.assessment-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.assessment-form label {
+  display: grid;
+  gap: 0.42rem;
+  font-weight: 800;
+}
+
+.assessment-form textarea {
+  min-height: 7rem;
+  resize: vertical;
 }
 
 .form-note,
@@ -488,6 +537,13 @@ input {
 
 .course-content {
   padding: 1rem;
+}
+
+.course-link {
+  display: inline-flex;
+  margin-top: 1rem;
+  color: var(--blue);
+  font-weight: 900;
 }
 
 .course-meta {
@@ -518,6 +574,80 @@ input {
 .coach-layout {
   grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.28fr);
   align-items: start;
+}
+
+.method-hero,
+.course-detail-layout {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4.75rem) 0;
+}
+
+.method-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.74fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  align-items: center;
+}
+
+.method-hero h1,
+.course-detail-hero h1 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 5.2rem);
+  line-height: 0.98;
+}
+
+.method-hero p,
+.course-detail-hero p {
+  max-width: 43rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.6vw, 1.18rem);
+  line-height: 1.65;
+}
+
+.method-stack {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.method-stack div,
+.course-detail-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.method-stack p {
+  margin: 0.7rem 0 0;
+  font-size: 0.96rem;
+}
+
+.course-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.7fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.back-link {
+  width: fit-content;
+}
+
+.course-detail-card h2 {
+  margin: 1rem 0;
+}
+
+.course-detail-card ul {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .student-brief,
@@ -621,6 +751,28 @@ blockquote {
   display: block;
 }
 
+.lesson-card {
+  display: grid;
+  min-height: 15rem;
+  align-content: space-between;
+  gap: 0.9rem;
+}
+
+.lesson-card h3 {
+  margin: 0;
+}
+
+.lesson-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lesson-footer strong {
+  color: var(--muted);
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -654,8 +806,12 @@ button:disabled {
   .hero-band,
   .auth-layout,
   .coach-layout,
+  .method-hero,
+  .course-detail-hero,
   .feature-grid,
-  .course-grid {
+  .course-grid,
+  .review-grid,
+  .lesson-grid {
     grid-template-columns: 1fr;
   }
 
@@ -685,7 +841,9 @@ button:disabled {
   .practice-actions,
   .recording-controls,
   .courses-heading,
-  .panel-heading {
+  .panel-heading,
+  .split-heading,
+  .lesson-footer {
     align-items: stretch;
     flex-direction: column;
   }

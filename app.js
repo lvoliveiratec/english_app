@@ -4,6 +4,15 @@ const menuButton = document.querySelector("#menuButton");
 const nav = document.querySelector(".nav-links");
 const loginForm = document.querySelector("#loginForm");
 const courseGrid = document.querySelector("#courseGrid");
+const lessonGrid = document.querySelector("#lessonGrid");
+const studentNavLinks = [...document.querySelectorAll("[data-student-nav]")];
+const placementForm = document.querySelector("#placementForm");
+const assessmentFeedback = document.querySelector("#assessmentFeedback");
+const courseDetailLevel = document.querySelector("#courseDetailLevel");
+const courseDetailTitle = document.querySelector("#courseDetailTitle");
+const courseDetailDescription = document.querySelector("#courseDetailDescription");
+const courseDetailDuration = document.querySelector("#courseDetailDuration");
+const courseDetailIncludes = document.querySelector("#courseDetailIncludes");
 const studentGreeting = document.querySelector("#studentGreeting");
 const studentBriefText = document.querySelector("#studentBriefText");
 const practicePhrase = document.querySelector("#practicePhrase");
@@ -19,28 +28,97 @@ const classFeedback = document.querySelector("#classFeedback");
 
 const courses = [
   {
+    slug: "english-conversation",
     title: "English Foundations",
     level: "Beginner",
     duration: "6 weeks",
     color: "#2563eb",
     description:
       "Essential vocabulary, useful phrases, short listening practice, and basic grammar for true beginners.",
+    longDescription:
+      "A guided English course for students who want a clear start. It builds everyday vocabulary, simple sentence patterns, listening habits, and confidence speaking from day one.",
+    includes: [
+      "Daily conversation phrases",
+      "Basic grammar and sentence building",
+      "Vocabulary for routine, family, work, and travel",
+      "Short listening and speaking drills",
+      "AI Teacher feedback after each practice",
+    ],
   },
   {
+    slug: "speaking-confidence",
     title: "Speaking Confidence",
     level: "Intermediate",
     duration: "8 weeks",
     color: "#16855f",
     description:
       "Guided conversations, pronunciation correction, and practice answering without translating word by word.",
+    longDescription:
+      "A conversation-first course for students who understand some English but need speed, clarity, and confidence in real interactions.",
+    includes: [
+      "Roleplays for work, meetings, travel, and small talk",
+      "Pronunciation targets based on recurring mistakes",
+      "Speaking prompts with follow-up questions",
+      "Vocabulary review from real conversations",
+      "Fluency feedback from the AI Teacher",
+    ],
   },
   {
+    slug: "real-life-english",
     title: "Real Life English",
     level: "Practical",
     duration: "10 weeks",
     color: "#e25645",
     description:
       "Real situations: work, travel, meetings, small talk, interviews, and classes with AI feedback.",
+    longDescription:
+      "A practical English course focused on real daily use. Each student gets individual guidance from a dedicated AI Teacher that learns their speaking, writing, vocabulary, and study patterns.",
+    includes: [
+      "Real-world lessons for everyday communication",
+      "Speaking, reading, writing, listening, and vocabulary practice",
+      "Dedicated AI Teacher guidance for each student",
+      "Personalized review based on mistakes and progress",
+      "Optional class recording analysis with consent",
+    ],
+  },
+];
+
+const lessons = [
+  {
+    skill: "Vocabulary",
+    title: "Words for daily routines",
+    time: "12 min",
+    description: "Review useful verbs, build short sentences, and save words for spaced review.",
+  },
+  {
+    skill: "Speaking",
+    title: "Answer without translating",
+    time: "15 min",
+    description: "Practice short answers with follow-up questions from the AI Teacher.",
+  },
+  {
+    skill: "Reading",
+    title: "A short workplace message",
+    time: "10 min",
+    description: "Read a realistic message and answer comprehension questions.",
+  },
+  {
+    skill: "Writing",
+    title: "Introduce your work",
+    time: "14 min",
+    description: "Write a short paragraph and receive spelling, grammar, and clarity feedback.",
+  },
+  {
+    skill: "Listening",
+    title: "Slow conversation practice",
+    time: "11 min",
+    description: "Listen for key words, repeat phrases, and check understanding.",
+  },
+  {
+    skill: "Pronunciation",
+    title: "Thought, world, comfortable",
+    time: "8 min",
+    description: "Train difficult sounds, word stress, and sentence rhythm.",
   },
 ];
 
@@ -54,6 +132,7 @@ const phrases = [
 
 const state = {
   userName: localStorage.getItem("fluentpath:user") || "Lucas",
+  isSignedIn: localStorage.getItem("fluentpath:signedIn") === "true",
   mediaRecorder: null,
   mediaStream: null,
   chunks: [],
@@ -72,6 +151,10 @@ function setRoute(routeName) {
 
   nav.classList.remove("open");
   document.title = `FluentPath English | ${safeRoute}`;
+
+  if (safeRoute === "course") {
+    renderCourseDetail();
+  }
 }
 
 function handleRouteChange() {
@@ -91,6 +174,7 @@ function renderCourses() {
               <span class="pill">${course.level}</span>
               <span class="pill">${course.duration}</span>
             </div>
+            <a class="course-link" href="#course" data-course-slug="${course.slug}">View course</a>
           </div>
         </article>
       `,
@@ -98,9 +182,41 @@ function renderCourses() {
     .join("");
 }
 
+function renderLessons() {
+  lessonGrid.innerHTML = lessons
+    .map(
+      (lesson) => `
+        <article class="lesson-card">
+          <span class="pill">${lesson.skill}</span>
+          <h3>${lesson.title}</h3>
+          <p>${lesson.description}</p>
+          <div class="lesson-footer">
+            <strong>${lesson.time}</strong>
+            <button class="secondary-action" type="button">Start</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderCourseDetail() {
+  const selectedSlug = sessionStorage.getItem("fluentpath:selectedCourse") || courses[0].slug;
+  const course = courses.find((item) => item.slug === selectedSlug) || courses[0];
+
+  courseDetailLevel.textContent = `${course.level} course`;
+  courseDetailTitle.textContent = course.title;
+  courseDetailDescription.textContent = course.longDescription;
+  courseDetailDuration.textContent = course.duration;
+  courseDetailIncludes.innerHTML = course.includes.map((item) => `<li>${item}</li>`).join("");
+}
+
 function refreshStudentCopy() {
   studentGreeting.textContent = `Hi, ${state.userName}.`;
   studentBriefText.textContent = `Good to see you here, ${state.userName}. Yesterday you studied for 28 minutes and completed 3 activities. Today the focus is pronunciation, listening, and confidence in short conversations.`;
+  studentNavLinks.forEach((link) => {
+    link.hidden = !state.isSignedIn;
+  });
 }
 
 function choosePhrase() {
@@ -216,9 +332,42 @@ loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
   state.userName = formData.get("name")?.toString().trim() || "Student";
+  state.isSignedIn = true;
   localStorage.setItem("fluentpath:user", state.userName);
+  localStorage.setItem("fluentpath:signedIn", "true");
   refreshStudentCopy();
-  window.location.hash = "coach";
+  window.location.hash = "dashboard";
+});
+
+courseGrid.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-course-slug]");
+
+  if (!link) {
+    return;
+  }
+
+  event.preventDefault();
+  sessionStorage.setItem("fluentpath:selectedCourse", link.dataset.courseSlug);
+  window.location.hash = "course";
+});
+
+placementForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const formData = new FormData(placementForm);
+  const level = formData.get("level");
+  const goal = formData.get("goal");
+
+  localStorage.setItem(
+    "fluentpath:placement",
+    JSON.stringify({
+      level,
+      goal,
+      writing: formData.get("writing")?.toString().trim() || "",
+      completedAt: new Date().toISOString(),
+    }),
+  );
+
+  assessmentFeedback.textContent = `Saved. Your AI Teacher will start with ${level} material focused on ${goal.toString().toLowerCase()}.`;
 });
 
 newPhraseButton.addEventListener("click", choosePhrase);
@@ -228,5 +377,6 @@ videoClassButton.addEventListener("click", () => startClassRecording("video"));
 stopClassButton.addEventListener("click", stopClassRecording);
 
 renderCourses();
+renderLessons();
 refreshStudentCopy();
 handleRouteChange();
