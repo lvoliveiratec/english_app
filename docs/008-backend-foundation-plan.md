@@ -52,6 +52,15 @@ POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
 GET  /api/admin/summary
+GET  /api/admin/resources
+POST /api/admin/students
+PUT  /api/admin/students/:id
+POST /api/admin/teachers
+PUT  /api/admin/teachers/:id
+POST /api/admin/plans
+PUT  /api/admin/plans/:id
+POST /api/admin/courses
+PUT  /api/admin/courses/:id
 ```
 
 The backend currently uses PostgreSQL when `DATABASE_URL` is set. Without `DATABASE_URL`, it uses in-memory demo storage.
@@ -66,6 +75,7 @@ Start with tables that match the current product needs:
 - `admin_profiles`
 - `sessions`
 - `courses`
+- `plans`
 - `lessons`
 - `lesson_progress`
 - `consent_records`
@@ -180,6 +190,7 @@ Build only this first:
 - Current student profile endpoint. Pending.
 - Frontend connected to those endpoints. Started.
 - Admin summary endpoint and first admin dashboard. Started.
+- Admin management for students, teachers, plans, and courses. Started.
 
 Keep media upload, transcription, AI feedback, and teacher dashboards as later milestones.
 
@@ -191,3 +202,5 @@ Keep media upload, transcription, AI feedback, and teacher dashboards as later m
 - Expand server-side role checks into permission scopes and audit logs.
 - Add teacher assignment tables before building the teacher dashboard.
 - Add seed data or an admin creation script for PostgreSQL development.
+- Add admin payment management endpoints.
+- Add admin policy/consent management endpoints.

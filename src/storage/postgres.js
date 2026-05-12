@@ -202,6 +202,263 @@ class PostgresStorage {
     };
   }
 
+  async getAdminResources() {
+    const [students, teachers, plans, courses] = await Promise.all([
+      this.pool.query(
+        `
+          select users.id, users.email, student_profiles.full_name, student_profiles.level,
+            student_profiles.goal, 'active' as status
+          from users
+          join student_profiles on student_profiles.user_id = users.id
+          where users.role = 'student'
+          order by student_profiles.updated_at desc
+        `,
+      ),
+      this.pool.query(
+        `
+          select users.id, users.email, teacher_profiles.full_name, teacher_profiles.specialty,
+            teacher_profiles.status
+          from users
+          join teacher_profiles on teacher_profiles.user_id = users.id
+          where users.role = 'teacher'
+          order by teacher_profiles.updated_at desc
+        `,
+      ),
+      this.pool.query(
+        `
+          select id, name, price_cents, billing_cycle, description, status
+          from plans
+          order by updated_at desc
+        `,
+      ),
+      this.pool.query(
+        `
+          select id, title, level, duration, description, status
+          from courses
+          order by updated_at desc
+        `,
+      ),
+    ]);
+
+    return {
+      students: students.rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        fullName: row.full_name,
+        level: row.level,
+        goal: row.goal,
+        status: row.status,
+      })),
+      teachers: teachers.rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        fullName: row.full_name,
+        specialty: row.specialty || "",
+        status: row.status,
+      })),
+      plans: plans.rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        priceCents: row.price_cents,
+        billingCycle: row.billing_cycle,
+        description: row.description || "",
+        status: row.status,
+      })),
+      courses: courses.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        level: row.level || "",
+        duration: row.duration || "",
+        description: row.description || "",
+        status: row.status,
+      })),
+    };
+  }
+
+  async createAdminStudent(data) {
+    const payload = await this.createStudentAccount({
+      email: data.email,
+      password: data.password || "english123",
+      profile: {
+        fullName: data.fullName,
+        age: "",
+        nativeLanguage: data.nativeLanguage || "Portuguese",
+        level: data.level || "Beginner",
+        goal: data.goal || "Daily conversation",
+        confidence: data.confidence || "",
+        studyTime: data.studyTime || "",
+        interests: [],
+        favoriteMedia: "",
+        hobbies: "",
+        foodAndDrinks: "",
+        sports: "",
+        motivation: data.notes || "",
+      },
+    });
+    return payload.user;
+  }
+
+  async updateAdminStudent(id, data) {
+    await this.pool.query(
+      "update users set email = $1, display_name = $2, updated_at = now() where id = $3 and role = 'student'",
+      [data.email.toLowerCase(), data.fullName.split(" ")[0] || data.fullName, id],
+    );
+    const result = await this.pool.query(
+      `
+        update student_profiles
+        set full_name = $1, native_language = $2, level = $3, goal = $4, motivation = $5,
+          updated_at = now()
+        where user_id = $6
+        returning user_id, full_name
+      `,
+      [data.fullName, data.nativeLanguage, data.level, data.goal, data.notes || "", id],
+    );
+
+    if (!result.rows[0]) {
+      const error = new Error("Student not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return { id, fullName: result.rows[0].full_name };
+  }
+
+  async createAdminTeacher(data) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("begin");
+      const userResult = await client.query(
+        `
+          insert into users (email, password_hash, role, display_name)
+          values ($1, $2, 'teacher', $3)
+          returning id, email, role, display_name
+        `,
+        [
+          data.email.toLowerCase(),
+          hashPassword(data.password || "teacher123"),
+          data.fullName.split(" ")[0] || data.fullName,
+        ],
+      );
+      await client.query(
+        `
+          insert into teacher_profiles (user_id, full_name, specialty, status)
+          values ($1, $2, $3, $4)
+        `,
+        [userResult.rows[0].id, data.fullName, data.specialty || "", data.status || "active"],
+      );
+      await client.query("commit");
+      return this.mapUser(userResult.rows[0]);
+    } catch (error) {
+      await client.query("rollback");
+
+      if (error.code === "23505") {
+        error.statusCode = 409;
+        error.message = "Email already exists.";
+      }
+
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateAdminTeacher(id, data) {
+    await this.pool.query(
+      "update users set email = $1, display_name = $2, updated_at = now() where id = $3 and role = 'teacher'",
+      [data.email.toLowerCase(), data.fullName.split(" ")[0] || data.fullName, id],
+    );
+    const result = await this.pool.query(
+      `
+        update teacher_profiles
+        set full_name = $1, specialty = $2, status = $3, updated_at = now()
+        where user_id = $4
+        returning user_id, full_name
+      `,
+      [data.fullName, data.specialty || "", data.status || "active", id],
+    );
+
+    if (!result.rows[0]) {
+      const error = new Error("Teacher not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return { id, fullName: result.rows[0].full_name };
+  }
+
+  async createAdminPlan(data) {
+    const result = await this.pool.query(
+      `
+        insert into plans (name, price_cents, billing_cycle, description, status)
+        values ($1, $2, $3, $4, $5)
+        returning id, name, price_cents, billing_cycle, description, status
+      `,
+      [
+        data.name,
+        data.priceCents || 0,
+        data.billingCycle || "monthly",
+        data.description || "",
+        data.status || "active",
+      ],
+    );
+    return this.mapPlan(result.rows[0]);
+  }
+
+  async updateAdminPlan(id, data) {
+    const result = await this.pool.query(
+      `
+        update plans
+        set name = $1, price_cents = $2, billing_cycle = $3, description = $4, status = $5,
+          updated_at = now()
+        where id = $6
+        returning id, name, price_cents, billing_cycle, description, status
+      `,
+      [data.name, data.priceCents || 0, data.billingCycle, data.description || "", data.status, id],
+    );
+
+    if (!result.rows[0]) {
+      const error = new Error("Plan not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return this.mapPlan(result.rows[0]);
+  }
+
+  async createAdminCourse(data) {
+    const result = await this.pool.query(
+      `
+        insert into courses (title, level, duration, description, status)
+        values ($1, $2, $3, $4, $5)
+        returning id, title, level, duration, description, status
+      `,
+      [data.title, data.level || "", data.duration || "", data.description || "", data.status || "draft"],
+    );
+    return this.mapCourse(result.rows[0]);
+  }
+
+  async updateAdminCourse(id, data) {
+    const result = await this.pool.query(
+      `
+        update courses
+        set title = $1, level = $2, duration = $3, description = $4, status = $5,
+          updated_at = now()
+        where id = $6
+        returning id, title, level, duration, description, status
+      `,
+      [data.title, data.level || "", data.duration || "", data.description || "", data.status, id],
+    );
+
+    if (!result.rows[0]) {
+      const error = new Error("Course not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return this.mapCourse(result.rows[0]);
+  }
+
   async getProfileForUser(user) {
     if (user.role === "student") {
       const result = await this.pool.query("select * from student_profiles where user_id = $1", [
@@ -250,6 +507,28 @@ class PostgresStorage {
       motivation: profile.motivation || "",
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
+    };
+  }
+
+  mapPlan(plan) {
+    return {
+      id: plan.id,
+      name: plan.name,
+      priceCents: plan.price_cents,
+      billingCycle: plan.billing_cycle,
+      description: plan.description || "",
+      status: plan.status,
+    };
+  }
+
+  mapCourse(course) {
+    return {
+      id: course.id,
+      title: course.title,
+      level: course.level || "",
+      duration: course.duration || "",
+      description: course.description || "",
+      status: course.status,
     };
   }
 }

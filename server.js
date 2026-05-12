@@ -100,6 +100,65 @@ function normalizeStudentProfile(profile = {}) {
   };
 }
 
+function normalizeAdminStudent(body = {}) {
+  return {
+    fullName: body.fullName?.toString().trim() || "Student",
+    email: body.email?.toString().trim() || "",
+    password: body.password?.toString() || "",
+    nativeLanguage: body.nativeLanguage?.toString().trim() || "Portuguese",
+    level: body.level?.toString() || "Beginner",
+    goal: body.goal?.toString() || "Daily conversation",
+    notes: body.notes?.toString().trim() || "",
+  };
+}
+
+function normalizeAdminTeacher(body = {}) {
+  return {
+    fullName: body.fullName?.toString().trim() || "Teacher",
+    email: body.email?.toString().trim() || "",
+    password: body.password?.toString() || "",
+    specialty: body.specialty?.toString().trim() || "",
+    status: body.status?.toString() || "active",
+  };
+}
+
+function normalizeAdminPlan(body = {}) {
+  return {
+    name: body.name?.toString().trim() || "Plan",
+    priceCents: Math.max(0, Math.round(Number(body.priceCents) || 0)),
+    billingCycle: body.billingCycle?.toString() || "monthly",
+    description: body.description?.toString().trim() || "",
+    status: body.status?.toString() || "active",
+  };
+}
+
+function normalizeAdminCourse(body = {}) {
+  return {
+    title: body.title?.toString().trim() || "Course",
+    level: body.level?.toString() || "",
+    duration: body.duration?.toString().trim() || "",
+    description: body.description?.toString().trim() || "",
+    status: body.status?.toString() || "draft",
+  };
+}
+
+async function getAdminSession(request) {
+  const cookies = parseCookies(request.headers.cookie);
+  const session = cookies.fluentpath_session
+    ? await storage.getSession(cookies.fluentpath_session)
+    : null;
+
+  return session?.user?.role === "admin" ? session : null;
+}
+
+function getRouteId(pathname, prefix) {
+  if (!pathname.startsWith(prefix)) {
+    return null;
+  }
+
+  return decodeURIComponent(pathname.slice(prefix.length));
+}
+
 async function handleApiRequest(request, response, parsedUrl) {
   try {
     if (request.method === "GET" && parsedUrl.pathname === "/api/health") {
@@ -167,18 +226,83 @@ async function handleApiRequest(request, response, parsedUrl) {
     }
 
     if (request.method === "GET" && parsedUrl.pathname === "/api/admin/summary") {
-      const cookies = parseCookies(request.headers.cookie);
-      const session = cookies.fluentpath_session
-        ? await storage.getSession(cookies.fluentpath_session)
-        : null;
-
-      if (session?.user?.role !== "admin") {
+      if (!(await getAdminSession(request))) {
         sendJson(response, 403, { error: "Admin access is required." });
         return true;
       }
 
       sendJson(response, 200, await storage.getAdminSummary());
       return true;
+    }
+
+    if (request.method === "GET" && parsedUrl.pathname === "/api/admin/resources") {
+      if (!(await getAdminSession(request))) {
+        sendJson(response, 403, { error: "Admin access is required." });
+        return true;
+      }
+
+      sendJson(response, 200, await storage.getAdminResources());
+      return true;
+    }
+
+    const adminRoutes = [
+      {
+        collectionPath: "/api/admin/students",
+        itemPath: "/api/admin/students/",
+        normalize: normalizeAdminStudent,
+        create: storage.createAdminStudent.bind(storage),
+        update: storage.updateAdminStudent.bind(storage),
+      },
+      {
+        collectionPath: "/api/admin/teachers",
+        itemPath: "/api/admin/teachers/",
+        normalize: normalizeAdminTeacher,
+        create: storage.createAdminTeacher.bind(storage),
+        update: storage.updateAdminTeacher.bind(storage),
+      },
+      {
+        collectionPath: "/api/admin/plans",
+        itemPath: "/api/admin/plans/",
+        normalize: normalizeAdminPlan,
+        create: storage.createAdminPlan.bind(storage),
+        update: storage.updateAdminPlan.bind(storage),
+      },
+      {
+        collectionPath: "/api/admin/courses",
+        itemPath: "/api/admin/courses/",
+        normalize: normalizeAdminCourse,
+        create: storage.createAdminCourse.bind(storage),
+        update: storage.updateAdminCourse.bind(storage),
+      },
+    ];
+
+    for (const route of adminRoutes) {
+      if (
+        request.method === "POST" &&
+        parsedUrl.pathname === route.collectionPath
+      ) {
+        if (!(await getAdminSession(request))) {
+          sendJson(response, 403, { error: "Admin access is required." });
+          return true;
+        }
+
+        const payload = await route.create(route.normalize(await readRequestBody(request)));
+        sendJson(response, 201, payload);
+        return true;
+      }
+
+      const id = getRouteId(parsedUrl.pathname, route.itemPath);
+
+      if (request.method === "PUT" && id) {
+        if (!(await getAdminSession(request))) {
+          sendJson(response, 403, { error: "Admin access is required." });
+          return true;
+        }
+
+        const payload = await route.update(id, route.normalize(await readRequestBody(request)));
+        sendJson(response, 200, payload);
+        return true;
+      }
     }
 
     if (parsedUrl.pathname.startsWith("/api/")) {

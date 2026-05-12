@@ -8,7 +8,7 @@ First prototype of an English learning app/site with:
 - Simulated AI Coach
 - Student dashboard with profile-aware AI Teacher copy
 - Initial backend API with auth, sessions, PostgreSQL schema, and in-memory fallback
-- Admin dashboard prototype with students, teachers, admins, progress, and payment metrics
+- Admin dashboard prototype with metrics plus forms to create/edit students, teachers, plans, and courses
 - Pronunciation practice with local audio recording
 - Local audio/video recording for in-person classes, with consent
 - Playwright smoke tests for login, signup, admin, course navigation, and mobile navigation
@@ -57,6 +57,15 @@ POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
 GET  /api/admin/summary
+GET  /api/admin/resources
+POST /api/admin/students
+PUT  /api/admin/students/:id
+POST /api/admin/teachers
+PUT  /api/admin/teachers/:id
+POST /api/admin/plans
+PUT  /api/admin/plans/:id
+POST /api/admin/courses
+PUT  /api/admin/courses/:id
 ```
 
 Demo accounts when using in-memory storage:
@@ -112,9 +121,9 @@ The project architecture folder lives in `architecture/`.
 
 ## Next technical steps
 
-1. Add backend endpoints to update student profiles and lesson progress.
-2. Add teacher-facing APIs and teacher dashboard screens.
-3. Add real admin management actions for users, roles, payments, and policies.
-4. Add authorized audio/video upload records before processing real media.
-5. Add transcription and AI feedback pipelines using student history.
-6. Add privacy, consent, retention, and recording deletion workflows.
+1. Add dedicated student profile endpoints for the logged-in student.
+2. Add lesson progress create/update endpoints.
+3. Add teacher-facing APIs and teacher dashboard screens.
+4. Add admin management for payments, consent, retention, and deletion policies.
+5. Add authorized audio/video upload records before processing real media.
+6. Add transcription and AI feedback pipelines using student history.

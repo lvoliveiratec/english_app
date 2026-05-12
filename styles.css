@@ -764,6 +764,13 @@ meter {
   height: 0.75rem;
 }
 
+.progress-note {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .coach-workspace {
   display: grid;
   gap: 1rem;
@@ -945,6 +952,83 @@ blockquote {
   line-height: 1.45;
 }
 
+.admin-storage-note {
+  max-width: 58rem;
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.admin-management-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-manager {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.admin-form {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.admin-form label {
+  display: grid;
+  gap: 0.42rem;
+  font-weight: 800;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+  min-height: 2.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+}
+
+.admin-form textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.admin-edit-button {
+  min-height: 2.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -986,7 +1070,8 @@ button:disabled {
   .review-grid,
   .lesson-grid,
   .admin-metric-grid,
-  .admin-grid {
+  .admin-grid,
+  .admin-management-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1016,6 +1101,7 @@ button:disabled {
   .hero-actions,
   .practice-actions,
   .recording-controls,
+  .admin-form-actions,
   .courses-heading,
   .panel-heading,
   .split-heading,

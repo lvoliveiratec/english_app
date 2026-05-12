@@ -22,6 +22,13 @@ const courseDetailDuration = document.querySelector("#courseDetailDuration");
 const courseDetailIncludes = document.querySelector("#courseDetailIncludes");
 const studentGreeting = document.querySelector("#studentGreeting");
 const studentBriefText = document.querySelector("#studentBriefText");
+const fluencyValue = document.querySelector("#fluencyValue");
+const fluencyMeter = document.querySelector("#fluencyMeter");
+const listeningValue = document.querySelector("#listeningValue");
+const listeningMeter = document.querySelector("#listeningMeter");
+const pronunciationValue = document.querySelector("#pronunciationValue");
+const pronunciationMeter = document.querySelector("#pronunciationMeter");
+const progressNote = document.querySelector("#progressNote");
 const practicePhrase = document.querySelector("#practicePhrase");
 const newPhraseButton = document.querySelector("#newPhraseButton");
 const recordVoiceButton = document.querySelector("#recordVoiceButton");
@@ -38,10 +45,23 @@ const adminTeachersCount = document.querySelector("#adminTeachersCount");
 const adminAdminsCount = document.querySelector("#adminAdminsCount");
 const adminRevenue = document.querySelector("#adminRevenue");
 const adminStorageBadge = document.querySelector("#adminStorageBadge");
+const adminPersistenceNote = document.querySelector("#adminPersistenceNote");
 const adminProgressRows = document.querySelector("#adminProgressRows");
 const adminPendingPayments = document.querySelector("#adminPendingPayments");
 const adminActiveStudents = document.querySelector("#adminActiveStudents");
 const adminActivityList = document.querySelector("#adminActivityList");
+const adminStudentForm = document.querySelector("#adminStudentForm");
+const adminTeacherForm = document.querySelector("#adminTeacherForm");
+const adminPlanForm = document.querySelector("#adminPlanForm");
+const adminCourseForm = document.querySelector("#adminCourseForm");
+const adminStudentRows = document.querySelector("#adminStudentRows");
+const adminTeacherRows = document.querySelector("#adminTeacherRows");
+const adminPlanRows = document.querySelector("#adminPlanRows");
+const adminCourseRows = document.querySelector("#adminCourseRows");
+const adminStudentFeedback = document.querySelector("#adminStudentFeedback");
+const adminTeacherFeedback = document.querySelector("#adminTeacherFeedback");
+const adminPlanFeedback = document.querySelector("#adminPlanFeedback");
+const adminCourseFeedback = document.querySelector("#adminCourseFeedback");
 
 const courses = [
   {
@@ -155,8 +175,17 @@ function readStoredStudentProfile() {
   }
 }
 
+function readStoredPlacement() {
+  try {
+    return JSON.parse(localStorage.getItem("fluentpath:placement")) || null;
+  } catch (error) {
+    return null;
+  }
+}
+
 const state = {
   studentProfile: readStoredStudentProfile(),
+  placement: readStoredPlacement(),
   userName: localStorage.getItem("fluentpath:user") || "Student",
   userRole:
     localStorage.getItem("fluentpath:role") ||
@@ -165,6 +194,13 @@ const state = {
   mediaRecorder: null,
   mediaStream: null,
   chunks: [],
+};
+
+const adminState = {
+  students: [],
+  teachers: [],
+  plans: [],
+  courses: [],
 };
 
 const protectedRoutes = ["dashboard", "lessons", "admin"];
@@ -312,6 +348,7 @@ function applySessionPayload(payload) {
   state.userName = user.displayName || profile?.fullName?.split(" ")[0] || "Student";
   state.userRole = user.role || "student";
   state.studentProfile = state.userRole === "student" ? profile : null;
+  state.placement = readStoredPlacement();
   state.isSignedIn = true;
 
   localStorage.setItem("fluentpath:user", state.userName);
@@ -321,6 +358,46 @@ function applySessionPayload(payload) {
   if (profile) {
     localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
   }
+}
+
+function getBaselineMetrics(level, goal) {
+  const baselines = {
+    Beginner: { fluency: 12, listening: 18, pronunciation: 10 },
+    Elementary: { fluency: 28, listening: 34, pronunciation: 25 },
+    Intermediate: { fluency: 52, listening: 58, pronunciation: 48 },
+    "Upper Intermediate": { fluency: 70, listening: 76, pronunciation: 66 },
+    Advanced: { fluency: 84, listening: 88, pronunciation: 82 },
+  };
+  const metrics = { ...(baselines[level] || baselines.Beginner) };
+
+  if (goal === "Pronunciation") {
+    metrics.pronunciation = Math.min(metrics.pronunciation + 5, 100);
+  }
+
+  return metrics;
+}
+
+function updateProgressItem(valueElement, meterElement, score) {
+  if (Number.isFinite(score)) {
+    valueElement.textContent = `${score}%`;
+    meterElement.value = score;
+    return;
+  }
+
+  valueElement.textContent = "Not assessed";
+  meterElement.value = 0;
+}
+
+function renderProgressMetrics() {
+  const metrics = state.placement?.metrics;
+
+  updateProgressItem(fluencyValue, fluencyMeter, metrics?.fluency);
+  updateProgressItem(listeningValue, listeningMeter, metrics?.listening);
+  updateProgressItem(pronunciationValue, pronunciationMeter, metrics?.pronunciation);
+
+  progressNote.textContent = metrics
+    ? "Initial baseline estimated from placement answers. Real scores will come from lessons, speaking attempts, and listening activities."
+    : "No score yet. Complete the placement to create an initial baseline.";
 }
 
 function refreshSessionCopy() {
@@ -351,6 +428,7 @@ function refreshSessionCopy() {
   loginNavLink.hidden = state.isSignedIn;
   logoutButton.hidden = !state.isSignedIn;
   adminNavLink.hidden = !isAdmin();
+  renderProgressMetrics();
 }
 
 function buildStudentProfile(formData) {
@@ -382,10 +460,12 @@ async function signOut() {
 
   state.userName = "Student";
   state.userRole = "";
+  state.placement = null;
   state.isSignedIn = false;
   localStorage.removeItem("fluentpath:user");
   localStorage.removeItem("fluentpath:role");
   localStorage.removeItem("fluentpath:signedIn");
+  localStorage.removeItem("fluentpath:placement");
   refreshSessionCopy();
   navigateTo("home");
 }
@@ -444,16 +524,33 @@ async function renderAdminSummary() {
   } catch (error) {
     updateAdminSummary(getLocalAdminSummary());
   }
+
+  await renderAdminResources();
 }
 
 function updateAdminSummary(summary) {
+  const storageLabels = {
+    postgres: "PostgreSQL",
+    memory: "Memory session",
+    local: "Local browser",
+  };
+  const storageNotes = {
+    postgres: "Data is being read from PostgreSQL and should persist after server restarts.",
+    memory:
+      "Data is stored only in this Node server process. It will be lost when the server restarts.",
+    local:
+      "The backend API is not available, so this is a local browser preview. It can overwrite the single local student profile.",
+  };
+
   adminStudentsCount.textContent = summary.totals.students;
   adminTeachersCount.textContent = summary.totals.teachers;
   adminAdminsCount.textContent = summary.totals.admins;
   adminRevenue.textContent = formatCurrency(summary.totals.monthlyRevenueCents);
   adminPendingPayments.textContent = summary.totals.pendingPayments;
   adminActiveStudents.textContent = summary.totals.activeStudents;
-  adminStorageBadge.textContent = summary.storage === "postgres" ? "PostgreSQL" : "Memory";
+  adminStorageBadge.textContent = storageLabels[summary.storage] || "Unknown";
+  adminPersistenceNote.textContent =
+    storageNotes[summary.storage] || "Persistence mode could not be detected.";
 
   adminProgressRows.innerHTML = summary.studentProgress.length
     ? summary.studentProgress
@@ -475,6 +572,198 @@ function updateAdminSummary(summary) {
   adminActivityList.innerHTML = summary.recentActivity
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
+}
+
+function getLocalAdminResources() {
+  const profile = readStoredStudentProfile();
+
+  return {
+    students: profile
+      ? [
+          {
+            id: "local-student",
+            email: profile.email || "student@example.com",
+            fullName: profile.fullName,
+            level: profile.level,
+            goal: profile.goal,
+            status: "active",
+          },
+        ]
+      : [],
+    teachers: [],
+    plans: [],
+    courses: [],
+  };
+}
+
+async function renderAdminResources() {
+  try {
+    const resources = await apiRequest("/api/admin/resources");
+    updateAdminResources(resources);
+  } catch (error) {
+    updateAdminResources(getLocalAdminResources());
+  }
+}
+
+function updateAdminResources(resources) {
+  adminState.students = resources.students || [];
+  adminState.teachers = resources.teachers || [];
+  adminState.plans = resources.plans || [];
+  adminState.courses = resources.courses || [];
+
+  adminStudentRows.innerHTML = renderRows(
+    adminState.students,
+    "students",
+    (item) => [item.fullName, item.email, item.level, item.goal],
+    5,
+  );
+  adminTeacherRows.innerHTML = renderRows(
+    adminState.teachers,
+    "teachers",
+    (item) => [item.fullName, item.email, item.specialty || "-", item.status],
+    5,
+  );
+  adminPlanRows.innerHTML = renderRows(
+    adminState.plans,
+    "plans",
+    (item) => [item.name, formatCurrency(item.priceCents), item.billingCycle, item.status],
+    5,
+  );
+  adminCourseRows.innerHTML = renderRows(
+    adminState.courses,
+    "courses",
+    (item) => [item.title, item.level || "-", item.duration || "-", item.status],
+    5,
+  );
+}
+
+function renderRows(items, type, getCells, colSpan) {
+  if (!items.length) {
+    return `<tr><td colspan="${colSpan}">No records yet.</td></tr>`;
+  }
+
+  return items
+    .map(
+      (item) => `
+        <tr>
+          ${getCells(item)
+            .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+            .join("")}
+          <td>
+            <button class="admin-edit-button" type="button" data-admin-edit="${type}" data-id="${escapeHtml(item.id)}">
+              Edit
+            </button>
+          </td>
+        </tr>
+      `,
+    )
+    .join("");
+}
+
+function setSelectValue(select, value) {
+  const optionExists = [...select.options].some((option) => option.value === value);
+
+  if (optionExists) {
+    select.value = value;
+  }
+}
+
+function resetAdminForm(form) {
+  form.reset();
+  form.elements.id.value = "";
+}
+
+function fillAdminForm(type, id) {
+  const maps = {
+    students: {
+      form: adminStudentForm,
+      items: adminState.students,
+      fill(item, form) {
+        form.elements.fullName.value = item.fullName || "";
+        form.elements.email.value = item.email || "";
+        form.elements.password.value = "";
+        form.elements.nativeLanguage.value = item.nativeLanguage || "Portuguese";
+        setSelectValue(form.elements.level, item.level || "Beginner");
+        setSelectValue(form.elements.goal, item.goal || "Daily conversation");
+        form.elements.notes.value = item.notes || "";
+      },
+    },
+    teachers: {
+      form: adminTeacherForm,
+      items: adminState.teachers,
+      fill(item, form) {
+        form.elements.fullName.value = item.fullName || "";
+        form.elements.email.value = item.email || "";
+        form.elements.password.value = "";
+        form.elements.specialty.value = item.specialty || "";
+        setSelectValue(form.elements.status, item.status || "active");
+      },
+    },
+    plans: {
+      form: adminPlanForm,
+      items: adminState.plans,
+      fill(item, form) {
+        form.elements.name.value = item.name || "";
+        form.elements.price.value = ((item.priceCents || 0) / 100).toFixed(2);
+        setSelectValue(form.elements.billingCycle, item.billingCycle || "monthly");
+        setSelectValue(form.elements.status, item.status || "active");
+        form.elements.description.value = item.description || "";
+      },
+    },
+    courses: {
+      form: adminCourseForm,
+      items: adminState.courses,
+      fill(item, form) {
+        form.elements.title.value = item.title || "";
+        form.elements.level.value = item.level || "";
+        form.elements.duration.value = item.duration || "";
+        setSelectValue(form.elements.status, item.status || "draft");
+        form.elements.description.value = item.description || "";
+      },
+    },
+  };
+  const config = maps[type];
+  const item = config?.items.find((candidate) => candidate.id === id);
+
+  if (!config || !item) {
+    return;
+  }
+
+  config.form.elements.id.value = item.id;
+  config.fill(item, config.form);
+}
+
+function readAdminForm(form, type) {
+  const formData = new FormData(form);
+  const base = Object.fromEntries(formData.entries());
+
+  if (type === "plans") {
+    return {
+      ...base,
+      priceCents: Math.round(Number(base.price || 0) * 100),
+    };
+  }
+
+  return base;
+}
+
+async function saveAdminRecord(form, type, feedbackElement) {
+  const id = form.elements.id.value;
+  const method = id ? "PUT" : "POST";
+  const path = id ? `/api/admin/${type}/${encodeURIComponent(id)}` : `/api/admin/${type}`;
+  const body = readAdminForm(form, type);
+
+  try {
+    await apiRequest(path, {
+      method,
+      body: JSON.stringify(body),
+    });
+    feedbackElement.textContent = id ? "Record updated." : "Record created.";
+    resetAdminForm(form);
+    await renderAdminSummary();
+  } catch (error) {
+    feedbackElement.textContent = error.message;
+  }
 }
 
 function choosePhrase() {
@@ -588,6 +877,21 @@ logoutButton.addEventListener("click", signOut);
 refreshAdminButton.addEventListener("click", renderAdminSummary);
 window.addEventListener("hashchange", handleRouteChange);
 
+document.addEventListener("click", (event) => {
+  const editButton = event.target.closest("[data-admin-edit]");
+
+  if (editButton) {
+    fillAdminForm(editButton.dataset.adminEdit, editButton.dataset.id);
+    return;
+  }
+
+  const resetButton = event.target.closest("[data-reset-admin-form]");
+
+  if (resetButton) {
+    resetAdminForm(document.querySelector(`#${resetButton.dataset.resetAdminForm}`));
+  }
+});
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
@@ -605,6 +909,7 @@ loginForm.addEventListener("submit", async (event) => {
     state.userName = fallbackName;
     state.userRole = email === "admin@example.com" ? "admin" : "student";
     state.studentProfile = readStoredStudentProfile();
+    state.placement = readStoredPlacement();
     state.isSignedIn = true;
     localStorage.setItem("fluentpath:user", state.userName);
     localStorage.setItem("fluentpath:role", state.userRole);
@@ -635,6 +940,7 @@ signupForm.addEventListener("submit", async (event) => {
     state.studentProfile = profile;
     state.userName = profile.fullName.split(" ")[0] || "Student";
     state.userRole = "student";
+    state.placement = null;
     state.isSignedIn = true;
     localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
     localStorage.setItem("fluentpath:user", state.userName);
@@ -645,6 +951,8 @@ signupForm.addEventListener("submit", async (event) => {
   if (!localStorage.getItem("fluentpath:studentProfile")) {
     localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
   }
+  state.placement = null;
+  localStorage.removeItem("fluentpath:placement");
 
   signupFeedback.textContent =
     "Student profile saved. The AI Teacher can now use these details to personalize the first lesson.";
@@ -669,18 +977,39 @@ placementForm.addEventListener("submit", (event) => {
   const formData = new FormData(placementForm);
   const level = formData.get("level");
   const goal = formData.get("goal");
+  const placement = {
+    level,
+    goal,
+    writing: formData.get("writing")?.toString().trim() || "",
+    metrics: getBaselineMetrics(level, goal),
+    completedAt: new Date().toISOString(),
+  };
 
-  localStorage.setItem(
-    "fluentpath:placement",
-    JSON.stringify({
-      level,
-      goal,
-      writing: formData.get("writing")?.toString().trim() || "",
-      completedAt: new Date().toISOString(),
-    }),
-  );
+  state.placement = placement;
+  localStorage.setItem("fluentpath:placement", JSON.stringify(placement));
+  renderProgressMetrics();
 
-  assessmentFeedback.textContent = `Saved. Your AI Teacher will start with ${level} material focused on ${goal.toString().toLowerCase()}.`;
+  assessmentFeedback.textContent = `Saved. Your AI Teacher will start with ${level} material focused on ${goal.toString().toLowerCase()}. The dashboard now shows an initial baseline estimate, not a measured score yet.`;
+});
+
+adminStudentForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveAdminRecord(adminStudentForm, "students", adminStudentFeedback);
+});
+
+adminTeacherForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveAdminRecord(adminTeacherForm, "teachers", adminTeacherFeedback);
+});
+
+adminPlanForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveAdminRecord(adminPlanForm, "plans", adminPlanFeedback);
+});
+
+adminCourseForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveAdminRecord(adminCourseForm, "courses", adminCourseFeedback);
 });
 
 newPhraseButton.addEventListener("click", choosePhrase);

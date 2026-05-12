@@ -51,8 +51,10 @@ test.describe("FluentPath English smoke flow", () => {
       .fill("I want to improve my English for work and daily conversations.");
     await placementForm.getByRole("button", { name: "Save assessment" }).click();
     await expect(page.locator("#assessmentFeedback")).toHaveText(
-      "Saved. Your AI Teacher will start with Beginner material focused on daily conversation.",
+      "Saved. Your AI Teacher will start with Beginner material focused on daily conversation. The dashboard now shows an initial baseline estimate, not a measured score yet.",
     );
+    await expect(page.locator("#fluencyValue")).toHaveText("12%");
+    await expect(page.locator("#progressNote")).toContainText("Initial baseline estimated");
 
     await page.getByRole("button", { name: "Record audio" }).click();
     await expect(page.locator("#classFeedback")).toHaveText(
@@ -128,6 +130,8 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#studentBriefText")).toContainText("your level is Elementary");
     await expect(page.locator("#studentBriefText")).toContainText("your main goal is travel");
     await expect(page.locator("#studentBriefText")).toContainText("Movies and series, Cooking");
+    await expect(page.locator("#fluencyValue")).toHaveText("Not assessed");
+    await expect(page.locator("#progressNote")).toContainText("No score yet");
     await expect(primaryNav.getByRole("button", { name: "Logout" })).toBeVisible();
 
     const savedProfile = await page.evaluate(() =>
@@ -145,6 +149,7 @@ test.describe("FluentPath English smoke flow", () => {
 
   test("admin can sign in and view the administrative dashboard", async ({ page }) => {
     const primaryNav = page.getByRole("navigation", { name: "Primary" });
+    const unique = Date.now();
 
     await primaryNav.getByRole("link", { name: "Login" }).click();
 
@@ -162,6 +167,61 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#adminTeachersCount")).not.toHaveText("0");
     await expect(page.locator("#adminRevenue")).toContainText("$");
     await expect(page.locator("#adminProgressRows")).toContainText("Lucas");
+
+    const studentForm = page.locator("#adminStudentForm");
+    await studentForm.scrollIntoViewIfNeeded();
+    await studentForm.getByLabel("Full name").fill("Admin Created Student");
+    await studentForm.getByLabel("Email").fill(`admin-student-${unique}@example.com`);
+    await studentForm.getByLabel("Temporary password").fill("student123");
+    await studentForm.getByLabel("Native language").fill("Portuguese");
+    await studentForm.locator("select[name='level']").selectOption({ label: "Elementary" });
+    await studentForm.locator("select[name='goal']").selectOption({ label: "Work and meetings" });
+    await studentForm.getByLabel("Notes").fill("Created from admin dashboard.");
+    await studentForm.getByRole("button", { name: "Save student" }).click();
+    await expect(page.locator("#adminStudentFeedback")).toHaveText("Record created.");
+    await expect(page.locator("#adminStudentRows")).toContainText("Admin Created Student");
+
+    const teacherForm = page.locator("#adminTeacherForm");
+    await teacherForm.scrollIntoViewIfNeeded();
+    await teacherForm.getByLabel("Full name").fill("Admin Created Teacher");
+    await teacherForm.getByLabel("Email").fill(`admin-teacher-${unique}@example.com`);
+    await teacherForm.getByLabel("Temporary password").fill("teacher123");
+    await teacherForm.getByLabel("Specialty").fill("Pronunciation");
+    await teacherForm.getByRole("button", { name: "Save teacher" }).click();
+    await expect(page.locator("#adminTeacherFeedback")).toHaveText("Record created.");
+    await expect(page.locator("#adminTeacherRows")).toContainText("Admin Created Teacher");
+
+    const planForm = page.locator("#adminPlanForm");
+    await planForm.scrollIntoViewIfNeeded();
+    await planForm.getByLabel("Plan name").fill("Conversation Plus");
+    await planForm.getByLabel("Price").fill("89.90");
+    await planForm.getByLabel("Billing cycle").selectOption({ label: "monthly" });
+    await planForm.getByLabel("Description").fill("Extra conversation practice.");
+    await planForm.getByRole("button", { name: "Save plan" }).click();
+    await expect(page.locator("#adminPlanFeedback")).toHaveText("Record created.");
+    await expect(page.locator("#adminPlanRows")).toContainText("Conversation Plus");
+    await expect(page.locator("#adminPlanRows")).toContainText("$89.90");
+
+    const courseForm = page.locator("#adminCourseForm");
+    await courseForm.scrollIntoViewIfNeeded();
+    await courseForm.getByLabel("Course title").fill("Admin Course");
+    await courseForm.getByLabel("Level").fill("Intermediate");
+    await courseForm.getByLabel("Duration").fill("4 weeks");
+    await courseForm.getByLabel("Status").selectOption({ label: "published" });
+    await courseForm.getByLabel("Description").fill("Course created from admin dashboard.");
+    await courseForm.getByRole("button", { name: "Save course" }).click();
+    await expect(page.locator("#adminCourseFeedback")).toHaveText("Record created.");
+    await expect(page.locator("#adminCourseRows")).toContainText("Admin Course");
+
+    await page
+      .locator("#adminCourseRows tr")
+      .filter({ hasText: "Admin Course" })
+      .getByRole("button", { name: "Edit" })
+      .click();
+    await courseForm.getByLabel("Duration").fill("5 weeks");
+    await courseForm.getByRole("button", { name: "Save course" }).click();
+    await expect(page.locator("#adminCourseFeedback")).toHaveText("Record updated.");
+    await expect(page.locator("#adminCourseRows")).toContainText("5 weeks");
   });
 
   test("mobile navigation opens, navigates, and closes", async ({ page }) => {

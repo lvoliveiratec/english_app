@@ -71,6 +71,30 @@ function createDemoState() {
       },
     ],
     payments: [{ userId: studentId, status: "paid", amountCents: 5900, paidAt: nowIso() }],
+    plans: [
+      {
+        id: createId("plan"),
+        name: "Monthly English",
+        priceCents: 5900,
+        billingCycle: "monthly",
+        description: "Standard monthly plan for individual students.",
+        status: "active",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      },
+    ],
+    courses: [
+      {
+        id: createId("course"),
+        title: "English Foundations",
+        level: "Beginner",
+        duration: "6 weeks",
+        description: "Essential vocabulary, phrases, and grammar for beginners.",
+        status: "published",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      },
+    ],
   };
 }
 
@@ -194,6 +218,205 @@ class MemoryStorage {
         "Consent workflow pending backend storage",
       ],
     };
+  }
+
+  async getAdminResources() {
+    return {
+      students: this.state.users
+        .filter((user) => user.role === "student")
+        .map((user) => {
+          const profile = this.state.studentProfiles.find((item) => item.userId === user.id);
+          return {
+            id: user.id,
+            email: user.email,
+            fullName: profile?.fullName || user.displayName,
+            level: profile?.level || "",
+            goal: profile?.goal || "",
+            status: "active",
+          };
+        }),
+      teachers: this.state.users
+        .filter((user) => user.role === "teacher")
+        .map((user) => {
+          const profile = this.state.teacherProfiles.find((item) => item.userId === user.id);
+          return {
+            id: user.id,
+            email: user.email,
+            fullName: profile?.fullName || user.displayName,
+            specialty: profile?.specialty || "",
+            status: profile?.status || "active",
+          };
+        }),
+      plans: this.state.plans,
+      courses: this.state.courses,
+    };
+  }
+
+  async createAdminStudent(data) {
+    const payload = await this.createStudentAccount({
+      email: data.email,
+      password: data.password || "english123",
+      profile: {
+        fullName: data.fullName,
+        age: "",
+        nativeLanguage: data.nativeLanguage || "Portuguese",
+        level: data.level || "Beginner",
+        goal: data.goal || "Daily conversation",
+        confidence: data.confidence || "",
+        studyTime: data.studyTime || "",
+        interests: [],
+        favoriteMedia: "",
+        hobbies: "",
+        foodAndDrinks: "",
+        sports: "",
+        motivation: data.notes || "",
+      },
+    });
+    return payload.user;
+  }
+
+  async updateAdminStudent(id, data) {
+    const user = this.state.users.find((item) => item.id === id && item.role === "student");
+    const profile = this.state.studentProfiles.find((item) => item.userId === id);
+
+    if (!user || !profile) {
+      const error = new Error("Student not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    user.email = data.email?.toLowerCase() || user.email;
+    user.displayName = data.fullName?.split(" ")[0] || user.displayName;
+    profile.fullName = data.fullName || profile.fullName;
+    profile.nativeLanguage = data.nativeLanguage || profile.nativeLanguage;
+    profile.level = data.level || profile.level;
+    profile.goal = data.goal || profile.goal;
+    profile.motivation = data.notes || profile.motivation;
+    profile.updatedAt = nowIso();
+
+    return { id: user.id, email: user.email, fullName: profile.fullName };
+  }
+
+  async createAdminTeacher(data) {
+    const normalizedEmail = data.email.toLowerCase();
+
+    if (this.state.users.some((user) => user.email === normalizedEmail)) {
+      const error = new Error("Email already exists.");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const userId = createId("usr");
+    const user = {
+      id: userId,
+      email: normalizedEmail,
+      passwordHash: hashPassword(data.password || "teacher123"),
+      role: "teacher",
+      displayName: data.fullName.split(" ")[0] || data.fullName,
+      createdAt: nowIso(),
+    };
+    const profile = {
+      userId,
+      fullName: data.fullName,
+      specialty: data.specialty || "",
+      status: data.status || "active",
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+
+    this.state.users.push(user);
+    this.state.teacherProfiles.push(profile);
+    return { id: user.id, email: user.email, fullName: profile.fullName };
+  }
+
+  async updateAdminTeacher(id, data) {
+    const user = this.state.users.find((item) => item.id === id && item.role === "teacher");
+    const profile = this.state.teacherProfiles.find((item) => item.userId === id);
+
+    if (!user || !profile) {
+      const error = new Error("Teacher not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    user.email = data.email?.toLowerCase() || user.email;
+    user.displayName = data.fullName?.split(" ")[0] || user.displayName;
+    profile.fullName = data.fullName || profile.fullName;
+    profile.specialty = data.specialty || profile.specialty || "";
+    profile.status = data.status || profile.status;
+    profile.updatedAt = nowIso();
+
+    return { id: user.id, email: user.email, fullName: profile.fullName };
+  }
+
+  async createAdminPlan(data) {
+    const plan = {
+      id: createId("plan"),
+      name: data.name,
+      priceCents: data.priceCents || 0,
+      billingCycle: data.billingCycle || "monthly",
+      description: data.description || "",
+      status: data.status || "active",
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+    this.state.plans.push(plan);
+    return plan;
+  }
+
+  async updateAdminPlan(id, data) {
+    const plan = this.state.plans.find((item) => item.id === id);
+
+    if (!plan) {
+      const error = new Error("Plan not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    Object.assign(plan, {
+      name: data.name || plan.name,
+      priceCents: Number.isFinite(data.priceCents) ? data.priceCents : plan.priceCents,
+      billingCycle: data.billingCycle || plan.billingCycle,
+      description: data.description || plan.description,
+      status: data.status || plan.status,
+      updatedAt: nowIso(),
+    });
+    return plan;
+  }
+
+  async createAdminCourse(data) {
+    const course = {
+      id: createId("course"),
+      title: data.title,
+      level: data.level || "",
+      duration: data.duration || "",
+      description: data.description || "",
+      status: data.status || "draft",
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+    this.state.courses.push(course);
+    return course;
+  }
+
+  async updateAdminCourse(id, data) {
+    const course = this.state.courses.find((item) => item.id === id);
+
+    if (!course) {
+      const error = new Error("Course not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    Object.assign(course, {
+      title: data.title || course.title,
+      level: data.level || course.level,
+      duration: data.duration || course.duration,
+      description: data.description || course.description,
+      status: data.status || course.status,
+      updatedAt: nowIso(),
+    });
+    return course;
   }
 
   getProfileForUser(user) {

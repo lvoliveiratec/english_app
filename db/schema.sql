@@ -32,10 +32,13 @@ create table if not exists student_profiles (
 create table if not exists teacher_profiles (
   user_id uuid primary key references users(id) on delete cascade,
   full_name text not null,
+  specialty text,
   status text not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table teacher_profiles add column if not exists specialty text;
 
 create table if not exists admin_profiles (
   user_id uuid primary key references users(id) on delete cascade,
@@ -56,7 +59,24 @@ create table if not exists courses (
   title text not null,
   level text,
   duration text,
+  description text,
+  status text not null default 'draft',
   created_at timestamptz not null default now()
+);
+
+alter table courses add column if not exists description text;
+alter table courses add column if not exists status text not null default 'draft';
+alter table courses add column if not exists updated_at timestamptz not null default now();
+
+create table if not exists plans (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  price_cents integer not null default 0,
+  billing_cycle text not null default 'monthly',
+  description text,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists lessons (

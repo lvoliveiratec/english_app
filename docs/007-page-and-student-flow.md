@@ -85,6 +85,13 @@ Purpose:
 - Include the initial placement questionnaire.
 - Allow recording for pronunciation and class media demos.
 
+Progress behavior:
+
+- A new account starts with `Not assessed` for fluency, listening, and pronunciation.
+- Completing the placement creates an initial baseline estimate from the declared level and goal.
+- The baseline is not a real measured score.
+- Real scores should later come from lessons, speaking attempts, listening checks, writing checks, and teacher/AI feedback.
+
 ### Initial Assessment
 
 Purpose:
@@ -116,12 +123,16 @@ Purpose:
 - Show total students, teachers, administrators, active students, pending payments, and monthly revenue.
 - Show student progress, current level, goal, difficulty, and recommendation.
 - Show recent operational activity.
-- Prepare space for future user management, teacher management, payment management, consent review, retention policy, and deletion workflows.
+- Register and update students.
+- Register and update teachers.
+- Create and update plans/prices.
+- Create and update courses.
+- Prepare space for future payment management, consent review, retention policy, and deletion workflows.
 
 Current access:
 
 - The client only shows Admin navigation for users with role `admin`.
-- The admin summary API requires an authenticated admin session.
+- Admin APIs require an authenticated admin session.
 - In-memory development storage includes `admin@example.com` / `admin123`.
 - Production still needs fuller admin permission scopes and audit logging.
 

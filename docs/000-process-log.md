@@ -50,6 +50,12 @@ This document records what we are building and why each step was taken.
 - Added an admin route and admin dashboard prototype for students, teachers, admins, progress, payments, and operational activity.
 - Added a demo admin account in memory storage: `admin@example.com` / `admin123`.
 - Added Playwright coverage for admin login and administrative dashboard loading.
+- Corrected the student dashboard progress meters so new accounts no longer show fake hardcoded percentages.
+- Progress now starts as `Not assessed` and only shows an initial baseline estimate after the placement form is completed.
+- Expanded the Admin dashboard with management modules for students, teachers, plans/prices, and courses.
+- Added admin API endpoints to list, create, and update students, teachers, plans, and courses.
+- Added a `plans` table to the PostgreSQL schema and added admin course fields for description/status.
+- Extended Playwright admin coverage to create student, teacher, plan, course, and update a course.
 
 ## Important Decisions
 

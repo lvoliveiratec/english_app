@@ -14,6 +14,7 @@
 - PostgreSQL schema and migration script.
 - In-memory fallback storage for local development without PostgreSQL.
 - Initial admin dashboard prototype.
+- Admin management modules for students, teachers, plans/prices, and courses.
 
 ## Phase 2: Real App Foundation
 
@@ -24,7 +25,7 @@
 - Move remaining `localStorage` state into server-side storage.
 - Add update endpoints for student profiles and progress.
 - Add teacher-facing APIs.
-- Add real admin management actions.
+- Add remaining admin management actions for payments, consent, retention, deletion, and policies.
 - Create secure upload records for authorized audio/video.
 
 Suggested first backend milestone:
@@ -33,6 +34,7 @@ Suggested first backend milestone:
 - Add `users`, `student_profiles`, `teacher_profiles`, `admin_profiles`, and `sessions` tables. Done.
 - Add endpoints for student signup, login, logout, and current user. Started.
 - Add admin summary endpoint. Started.
+- Add admin resources/create/update endpoints for students, teachers, plans, and courses. Started.
 - Add profile retrieval/update endpoints. Next.
 - Keep audio/video upload out of scope until authentication, consent, and ownership are working.
 
