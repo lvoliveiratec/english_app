@@ -6,9 +6,19 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node --check app.js && node --check server.js"
+    "test": "npm run check && npm run test:e2e",
+    "check": "node --check app.js && node --check server.js && node --check src/security.js && node --check src/storage/index.js && node --check src/storage/memory.js && node --check src/storage/postgres.js && node --check scripts/migrate.js",
+    "db:migrate": "node scripts/migrate.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "engines": {
     "node": ">=24"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
   }
 }

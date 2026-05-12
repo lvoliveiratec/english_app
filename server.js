@@ -1,10 +1,12 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const { createStorage } = require("./src/storage");
 
 const host = "127.0.0.1";
 const port = Number(process.env.PORT || 5173);
 const root = __dirname;
+const storage = createStorage();
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -20,6 +22,179 @@ const contentTypes = {
   ".ico": "image/x-icon",
 };
 
+function readRequestBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+
+    request.on("data", (chunk) => {
+      body += chunk;
+
+      if (body.length > 1_000_000) {
+        request.destroy();
+        reject(new Error("Request body is too large."));
+      }
+    });
+
+    request.on("end", () => {
+      if (!body) {
+        resolve({});
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(new Error("Invalid JSON body."));
+      }
+    });
+  });
+}
+
+function sendJson(response, statusCode, payload, extraHeaders = {}) {
+  response.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    ...extraHeaders,
+  });
+  response.end(JSON.stringify(payload));
+}
+
+function parseCookies(cookieHeader = "") {
+  return Object.fromEntries(
+    cookieHeader
+      .split(";")
+      .map((cookie) => cookie.trim())
+      .filter(Boolean)
+      .map((cookie) => {
+        const [name, ...valueParts] = cookie.split("=");
+        return [name, decodeURIComponent(valueParts.join("="))];
+      }),
+  );
+}
+
+function createSessionCookie(token) {
+  return `fluentpath_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`;
+}
+
+function clearSessionCookie() {
+  return "fluentpath_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0";
+}
+
+function normalizeStudentProfile(profile = {}) {
+  return {
+    fullName: profile.fullName?.toString().trim() || "Student",
+    age: profile.age?.toString().trim() || "",
+    nativeLanguage: profile.nativeLanguage?.toString().trim() || "",
+    level: profile.level?.toString() || "I am not sure yet",
+    goal: profile.goal?.toString() || "Daily conversation",
+    confidence: profile.confidence?.toString() || "",
+    studyTime: profile.studyTime?.toString() || "",
+    interests: Array.isArray(profile.interests)
+      ? profile.interests.map((item) => item.toString())
+      : [],
+    favoriteMedia: profile.favoriteMedia?.toString().trim() || "",
+    hobbies: profile.hobbies?.toString().trim() || "",
+    foodAndDrinks: profile.foodAndDrinks?.toString().trim() || "",
+    sports: profile.sports?.toString().trim() || "",
+    motivation: profile.motivation?.toString().trim() || "",
+  };
+}
+
+async function handleApiRequest(request, response, parsedUrl) {
+  try {
+    if (request.method === "GET" && parsedUrl.pathname === "/api/health") {
+      sendJson(response, 200, await storage.health());
+      return true;
+    }
+
+    if (request.method === "POST" && parsedUrl.pathname === "/api/auth/signup") {
+      const body = await readRequestBody(request);
+      const email = body.email?.toString().trim();
+      const password = body.password?.toString();
+
+      if (!email || !password) {
+        sendJson(response, 400, { error: "Email and password are required." });
+        return true;
+      }
+
+      const profile = normalizeStudentProfile(body.profile);
+      const payload = await storage.createStudentAccount({ email, password, profile });
+      const token = await storage.createSession(payload.user.id);
+      sendJson(response, 201, payload, { "Set-Cookie": createSessionCookie(token) });
+      return true;
+    }
+
+    if (request.method === "POST" && parsedUrl.pathname === "/api/auth/login") {
+      const body = await readRequestBody(request);
+      const email = body.email?.toString().trim();
+      const password = body.password?.toString();
+
+      if (!email || !password) {
+        sendJson(response, 400, { error: "Email and password are required." });
+        return true;
+      }
+
+      const payload = await storage.login({ email, password });
+      const token = await storage.createSession(payload.user.id);
+      sendJson(response, 200, payload, { "Set-Cookie": createSessionCookie(token) });
+      return true;
+    }
+
+    if (request.method === "POST" && parsedUrl.pathname === "/api/auth/logout") {
+      const cookies = parseCookies(request.headers.cookie);
+
+      if (cookies.fluentpath_session) {
+        await storage.deleteSession(cookies.fluentpath_session);
+      }
+
+      sendJson(response, 200, { ok: true }, { "Set-Cookie": clearSessionCookie() });
+      return true;
+    }
+
+    if (request.method === "GET" && parsedUrl.pathname === "/api/auth/me") {
+      const cookies = parseCookies(request.headers.cookie);
+      const session = cookies.fluentpath_session
+        ? await storage.getSession(cookies.fluentpath_session)
+        : null;
+
+      if (!session) {
+        sendJson(response, 401, { error: "Not signed in." });
+        return true;
+      }
+
+      sendJson(response, 200, session);
+      return true;
+    }
+
+    if (request.method === "GET" && parsedUrl.pathname === "/api/admin/summary") {
+      const cookies = parseCookies(request.headers.cookie);
+      const session = cookies.fluentpath_session
+        ? await storage.getSession(cookies.fluentpath_session)
+        : null;
+
+      if (session?.user?.role !== "admin") {
+        sendJson(response, 403, { error: "Admin access is required." });
+        return true;
+      }
+
+      sendJson(response, 200, await storage.getAdminSummary());
+      return true;
+    }
+
+    if (parsedUrl.pathname.startsWith("/api/")) {
+      sendJson(response, 404, { error: "API route not found." });
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    sendJson(response, error.statusCode || 500, {
+      error: error.message || "Unexpected server error.",
+    });
+    return true;
+  }
+}
+
 function resolveRequestPath(url) {
   const parsedUrl = new URL(url, `http://${host}:${port}`);
   const requestedPath = parsedUrl.pathname === "/" ? "/index.html" : parsedUrl.pathname;
@@ -33,7 +208,14 @@ function resolveRequestPath(url) {
   return filePath;
 }
 
-const server = http.createServer((request, response) => {
+const server = http.createServer(async (request, response) => {
+  const parsedUrl = new URL(request.url, `http://${host}:${port}`);
+  const handledApi = await handleApiRequest(request, response, parsedUrl);
+
+  if (handledApi) {
+    return;
+  }
+
   const filePath = resolveRequestPath(request.url);
 
   if (!filePath) {

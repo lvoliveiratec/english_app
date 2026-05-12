@@ -43,7 +43,35 @@ Purpose:
 Purpose:
 
 - Let the student enter the app.
+- Let the student create a local demo account.
+- Hide student-only pages until the student is signed in.
+- Show `Logout` after sign in.
+- Use backend auth endpoints when the app is served through Node.
+- Keep local fallback behavior when opened as a static file.
 - Future versions will include real authentication and identity validation.
+
+### Create Account
+
+Purpose:
+
+- Capture the first student profile before the first lesson.
+- Collect personal details such as name, email, age, and native language.
+- Collect English-learning signals: current level, main goal, speaking confidence, and study availability.
+- Collect interests that help the AI Teacher personalize examples and speaking prompts:
+  - Movies and series
+  - Music
+  - Sports
+  - Cooking
+  - Travel
+  - Games
+  - Books
+  - Work and business
+- Collect free-text context: favorite media, hobbies, foods/drinks, sports, and motivation.
+- Save the demo profile locally until a real backend/database exists.
+
+Important current rule:
+
+- The password field is not stored in the local profile.
 
 ## Student Pages After Login
 
@@ -53,6 +81,7 @@ Purpose:
 
 - Give the student the first post-login experience.
 - Show progress, daily focus, and the first AI Teacher message.
+- Use saved student profile details to personalize the first AI Teacher summary.
 - Include the initial placement questionnaire.
 - Allow recording for pronunciation and class media demos.
 
@@ -77,12 +106,32 @@ Purpose:
   - Pronunciation
 - Let the AI Teacher recommend lessons based on student progress and recurring mistakes.
 
+## Administrative Pages
+
+### Admin Dashboard
+
+Purpose:
+
+- Give administrators a first operational view of the school/app.
+- Show total students, teachers, administrators, active students, pending payments, and monthly revenue.
+- Show student progress, current level, goal, difficulty, and recommendation.
+- Show recent operational activity.
+- Prepare space for future user management, teacher management, payment management, consent review, retention policy, and deletion workflows.
+
+Current access:
+
+- The client only shows Admin navigation for users with role `admin`.
+- The admin summary API requires an authenticated admin session.
+- In-memory development storage includes `admin@example.com` / `admin123`.
+- Production still needs fuller admin permission scopes and audit logging.
+
 ## Next Product Steps
 
-- Convert the static prototype into React + TypeScript.
-- Add real routing for course detail pages.
-- Add a real onboarding/placement assessment flow.
+- Create the backend foundation for real users, roles, sessions, and profiles.
+- Add database storage for the student profile currently held in `localStorage`.
+- Add backend-backed login, logout, and signup.
+- Add a real onboarding/placement assessment flow connected to the student profile.
 - Add lesson player screens for each skill.
-- Add teacher/admin roles later.
+- Expand teacher/admin roles after the user/profile foundation is stable.
 - Connect dashboard and lessons to backend data.
 - Connect AI Teacher responses to RAG and student memory.

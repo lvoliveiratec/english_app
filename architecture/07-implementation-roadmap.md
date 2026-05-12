@@ -7,6 +7,10 @@
 - Add student dashboard.
 - Add first assessment.
 - Add lessons page.
+- Add demo signup, login, logout, and local student profile storage.
+- Add Playwright smoke tests for core flows.
+- Add initial backend API with PostgreSQL schema and memory fallback.
+- Add first admin dashboard prototype.
 - Keep all copy English-only.
 - Keep documentation updated.
 
@@ -25,8 +29,11 @@
 - Add authentication.
 - Add Postgres.
 - Add migrations.
-- Add student, teacher, course, lesson, and progress models.
+- Add user, session, student profile, teacher profile, admin profile, course, lesson, progress, consent, and media models.
 - Add API contracts for frontend.
+- Connect signup, login, logout, and current profile to the backend.
+- Add admin summary API and administrative dashboard.
+- Keep media upload out of the first backend milestone until auth and consent are in place.
 
 ## Phase 4: AI Teacher MVP
 

@@ -25,7 +25,9 @@
           <a href="#coach" data-route="coach">AI Coach</a>
           <a href="#dashboard" data-route="dashboard" data-student-nav hidden>Dashboard</a>
           <a href="#lessons" data-route="lessons" data-student-nav hidden>Lessons</a>
-          <a href="#login" data-route="login">Login</a>
+          <a href="#admin" data-route="admin" id="adminNavLink" hidden>Admin</a>
+          <a href="#login" data-route="login" id="loginNavLink">Login</a>
+          <button type="button" id="logoutButton" hidden>Logout</button>
         </nav>
         <button class="menu-button" type="button" aria-label="Open menu" id="menuButton">
           <span></span>
@@ -59,8 +61,10 @@
                 <span>Today</span>
               </div>
               <div class="coach-message">
-                <p class="message-name">Hi, Lucas. Good to see you here!</p>
-                <p>
+                <p class="message-name" id="homeCoachGreeting">
+                  Your AI Teacher is ready to help.
+                </p>
+                <p id="homeCoachSummary">
                   Yesterday you improved your past-tense answers. Today we will practice real
                   conversation, review <strong>thought</strong>, and build a short answer you can
                   use at work.
@@ -186,9 +190,141 @@
                 <input type="password" name="password" value="english123" autocomplete="current-password" />
               </label>
               <button class="primary-action full-width" type="submit">Sign in</button>
+              <a class="secondary-action full-width" href="#signup">Create account</a>
               <p class="form-note">
                 After signing in, you will see a personalized AI greeting with progress saved in
                 this browser.
+              </p>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="signup" data-page>
+          <div class="signup-layout">
+            <div class="auth-copy">
+              <p class="eyebrow">Create student account</p>
+              <h1>Tell your AI Teacher who you are before the first lesson.</h1>
+              <p>
+                This profile gives the learning system a useful starting point: personal details,
+                current English level, goals, interests, and conversation topics the student already
+                cares about.
+              </p>
+            </div>
+            <form class="login-box signup-form" id="signupForm">
+              <div class="form-grid two-columns">
+                <label>
+                  Full name
+                  <input type="text" name="fullName" autocomplete="name" required />
+                </label>
+                <label>
+                  Email
+                  <input type="email" name="email" autocomplete="email" required />
+                </label>
+                <label>
+                  Password
+                  <input type="password" name="password" autocomplete="new-password" required />
+                </label>
+                <label>
+                  Age
+                  <input type="number" name="age" min="8" max="100" inputmode="numeric" />
+                </label>
+                <label>
+                  Native language
+                  <input type="text" name="nativeLanguage" value="Portuguese" />
+                </label>
+                <label>
+                  Current English level
+                  <select name="level" required>
+                    <option value="">Choose one</option>
+                    <option>Beginner</option>
+                    <option>Elementary</option>
+                    <option>Intermediate</option>
+                    <option>Upper Intermediate</option>
+                    <option>Advanced</option>
+                    <option>I am not sure yet</option>
+                  </select>
+                </label>
+                <label>
+                  Main goal
+                  <select name="goal" required>
+                    <option value="">Choose one</option>
+                    <option>Daily conversation</option>
+                    <option>Work and meetings</option>
+                    <option>Travel</option>
+                    <option>School or exams</option>
+                    <option>Interviews</option>
+                    <option>Pronunciation</option>
+                  </select>
+                </label>
+                <label>
+                  Speaking confidence
+                  <select name="confidence" required>
+                    <option value="">Choose one</option>
+                    <option>Very shy</option>
+                    <option>A little shy</option>
+                    <option>Comfortable with simple phrases</option>
+                    <option>Comfortable in conversations</option>
+                  </select>
+                </label>
+                <label>
+                  Study availability
+                  <select name="studyTime" required>
+                    <option value="">Choose one</option>
+                    <option>10 minutes a day</option>
+                    <option>20 minutes a day</option>
+                    <option>30 minutes a day</option>
+                    <option>3 classes per week</option>
+                    <option>Weekend study</option>
+                  </select>
+                </label>
+              </div>
+
+              <fieldset>
+                <legend>Topics the student enjoys</legend>
+                <div class="checkbox-grid">
+                  <label><input type="checkbox" name="interests" value="Movies and series" /> Movies and series</label>
+                  <label><input type="checkbox" name="interests" value="Music" /> Music</label>
+                  <label><input type="checkbox" name="interests" value="Sports" /> Sports</label>
+                  <label><input type="checkbox" name="interests" value="Cooking" /> Cooking</label>
+                  <label><input type="checkbox" name="interests" value="Travel" /> Travel</label>
+                  <label><input type="checkbox" name="interests" value="Games" /> Games</label>
+                  <label><input type="checkbox" name="interests" value="Books" /> Books</label>
+                  <label><input type="checkbox" name="interests" value="Work and business" /> Work and business</label>
+                </div>
+              </fieldset>
+
+              <div class="form-grid two-columns">
+                <label>
+                  Favorite things to watch
+                  <textarea name="favoriteMedia" rows="3" placeholder="Series, movies, YouTube channels, podcasts..."></textarea>
+                </label>
+                <label>
+                  Hobbies and free time
+                  <textarea name="hobbies" rows="3" placeholder="What do you like doing after work or school?"></textarea>
+                </label>
+                <label>
+                  Favorite foods and drinks
+                  <textarea name="foodAndDrinks" rows="3" placeholder="Coffee, pizza, barbecue, tea, sushi..."></textarea>
+                </label>
+                <label>
+                  Sports or physical activities
+                  <textarea name="sports" rows="3" placeholder="Soccer, gym, running, dance, no sports yet..."></textarea>
+                </label>
+              </div>
+
+              <label>
+                Why do you want to learn English?
+                <textarea
+                  name="motivation"
+                  rows="4"
+                  placeholder="Write a few sentences so the AI Teacher can understand your context."
+                  required
+                ></textarea>
+              </label>
+              <button class="primary-action full-width" type="submit">Create student account</button>
+              <p class="form-note" id="signupFeedback">
+                In this prototype, the student profile is saved locally. Later this same structure
+                can be sent to the student database.
               </p>
             </form>
           </div>
@@ -448,6 +584,93 @@
               <a class="secondary-action" href="#dashboard">Back to dashboard</a>
             </div>
             <div class="lesson-grid" id="lessonGrid"></div>
+          </div>
+        </section>
+
+        <section class="page" id="admin" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Administration</p>
+                <h1>School operations, students, teachers, progress, and payments.</h1>
+              </div>
+              <button class="secondary-action" type="button" id="refreshAdminButton">
+                Refresh
+              </button>
+            </div>
+
+            <div class="admin-metric-grid" id="adminMetricGrid" aria-label="Administrative metrics">
+              <article class="metric-card">
+                <span>Students</span>
+                <strong id="adminStudentsCount">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Teachers</span>
+                <strong id="adminTeachersCount">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Admins</span>
+                <strong id="adminAdminsCount">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Monthly revenue</span>
+                <strong id="adminRevenue">$0</strong>
+              </article>
+            </div>
+
+            <div class="admin-grid">
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Student development</p>
+                    <h2>Progress and next actions</h2>
+                  </div>
+                  <span class="pill" id="adminStorageBadge">Backend</span>
+                </div>
+                <div class="admin-table-wrap">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Student</th>
+                        <th>Level</th>
+                        <th>Goal</th>
+                        <th>Progress</th>
+                        <th>Difficulty</th>
+                        <th>Recommendation</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminProgressRows">
+                      <tr>
+                        <td colspan="6">Loading administrative summary...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Operations</p>
+                    <h2>Payments and activity</h2>
+                  </div>
+                  <span class="pill warning">Prototype</span>
+                </div>
+                <div class="admin-list">
+                  <div>
+                    <span>Pending payments</span>
+                    <strong id="adminPendingPayments">0</strong>
+                  </div>
+                  <div>
+                    <span>Active students</span>
+                    <strong id="adminActiveStudents">0</strong>
+                  </div>
+                </div>
+                <ul class="activity-list" id="adminActivityList">
+                  <li>Loading activity...</li>
+                </ul>
+              </section>
+            </div>
           </div>
         </section>
       </main>

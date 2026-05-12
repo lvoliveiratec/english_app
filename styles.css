@@ -83,16 +83,23 @@ input {
   gap: 0.4rem;
 }
 
-.nav-links a {
+.nav-links a,
+.nav-links button {
   padding: 0.65rem 0.85rem;
+  border: 0;
   border-radius: 8px;
+  background: transparent;
   color: var(--muted);
+  cursor: pointer;
+  font: inherit;
   font-weight: 700;
   font-size: 0.94rem;
+  text-align: left;
 }
 
 .nav-links a.active,
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links button:hover {
   color: var(--ink);
   background: rgba(37, 99, 235, 0.09);
 }
@@ -453,6 +460,7 @@ input {
 }
 
 .auth-layout,
+.signup-layout,
 .coach-layout {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(20rem, 1.1fr);
@@ -462,6 +470,11 @@ input {
   min-height: calc(100vh - 74px);
   margin: 0 auto;
   padding: clamp(2rem, 5vw, 4rem) 0;
+}
+
+.signup-layout {
+  grid-template-columns: minmax(16rem, 0.65fr) minmax(0, 1.35fr);
+  align-items: start;
 }
 
 .student-dashboard-hero {
@@ -501,6 +514,8 @@ input {
 }
 
 .login-box input,
+.login-box select,
+.login-box textarea,
 .assessment-form select,
 .assessment-form textarea {
   min-height: 3rem;
@@ -513,10 +528,57 @@ input {
 }
 
 .login-box input:focus,
+.login-box select:focus,
+.login-box textarea:focus,
 .assessment-form select:focus,
 .assessment-form textarea:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.login-box textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.signup-form fieldset {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.signup-form legend {
+  padding: 0 0.4rem;
+  font-weight: 900;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.checkbox-grid label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 700;
+}
+
+.checkbox-grid input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--blue);
 }
 
 .assessment-form {
@@ -796,6 +858,93 @@ blockquote {
   color: var(--muted);
 }
 
+.admin-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metric-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--white);
+}
+
+.metric-card span,
+.admin-list span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.admin-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.9rem;
+  background: var(--paper);
+}
+
+.admin-list strong {
+  font-size: 1.35rem;
+}
+
+.activity-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -828,18 +977,22 @@ button:disabled {
 
   .hero-band,
   .auth-layout,
+  .signup-layout,
   .coach-layout,
   .method-hero,
   .course-detail-hero,
   .feature-grid,
   .course-grid,
   .review-grid,
-  .lesson-grid {
+  .lesson-grid,
+  .admin-metric-grid,
+  .admin-grid {
     grid-template-columns: 1fr;
   }
 
   .hero-band,
-  .auth-layout {
+  .auth-layout,
+  .signup-layout {
     min-height: auto;
   }
 
@@ -879,6 +1032,11 @@ button:disabled {
   }
 
   .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .two-columns,
+  .checkbox-grid {
     grid-template-columns: 1fr;
   }
 }

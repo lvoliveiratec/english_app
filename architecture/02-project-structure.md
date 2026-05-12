@@ -22,6 +22,9 @@ english_app/
     005-rag-and-data-architecture.md
     006-ai-teacher-agent.md
     007-page-and-student-flow.md
+    008-backend-foundation-plan.md
+  db/
+    schema.sql
   kb/
     english/
       README.md
@@ -33,9 +36,21 @@ english_app/
       speaking-assessment-rubric.md
       vocabulary-themes.md
       writing-spelling-guide.md
+  tests/
+    smoke.spec.js
+  scripts/
+    migrate.js
+  src/
+    security.js
+    storage/
+      index.js
+      memory.js
+      postgres.js
   app.js
   index.html
   package.json
+  package-lock.json
+  playwright.config.js
   server.js
   styles.css
 ```
@@ -89,7 +104,13 @@ english_app/
 
 - `architecture/`: system shape and diagrams.
 - `docs/`: project decisions, product notes, roadmap, and process log.
+- `db/`: PostgreSQL schema and migration SQL.
 - `kb/`: source knowledge for AI retrieval.
+- `src/storage`: backend storage adapters for PostgreSQL and in-memory development data.
+- `src/security.js`: password hashing, token, and ID helpers.
+- `scripts/`: local backend/database utility scripts.
+- `tests/`: Playwright smoke tests for the current prototype.
+- `playwright.config.js`: end-to-end test configuration.
 - `apps/web`: future frontend application.
 - `apps/api`: future backend API.
 - `apps/workers`: future async processing jobs.
