@@ -4,6 +4,16 @@ FluentPath English uses agent roles as architectural boundaries.
 
 These agents are not necessarily separate deployed services at the beginning. They describe ownership, responsibilities, and future automation boundaries.
 
+The product agent contracts now live in `agents/`:
+
+- `agents/ai-coach.md`
+- `agents/ai-teacher.md`
+- `agents/placement-agent.md`
+- `agents/pronunciation-agent.md`
+- `agents/teacher-summary-agent.md`
+
+Repository-level instructions for coding agents live in `AGENTS.md`.
+
 ## Frontend Agent
 
 Owns the learner-facing UI.

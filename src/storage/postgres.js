@@ -21,11 +21,11 @@ class PostgresStorage {
       const displayName = profile.fullName.split(" ")[0] || profile.fullName;
       const userResult = await client.query(
         `
-          insert into users (email, password_hash, role, display_name)
-          values ($1, $2, 'student', $3)
-          returning id, email, role, display_name
+          insert into users (email, password_hash, role, display_name, phone)
+          values ($1, $2, 'student', $3, $4)
+          returning id, email, role, display_name, phone
         `,
-        [email.toLowerCase(), passwordHash, displayName],
+        [email.toLowerCase(), passwordHash, displayName, profile.phone || ""],
       );
       const user = userResult.rows[0];
       const profileResult = await client.query(
@@ -66,12 +66,14 @@ class PostgresStorage {
           profile.motivation,
         ],
       );
+      await this.upsertAddress(client, user.id, profile.address || {});
 
       await client.query("commit");
 
       return {
         user: this.mapUser(user),
         profile: this.mapStudentProfile(profileResult.rows[0]),
+        address: await this.getAddressForUser(user.id, client),
       };
     } catch (error) {
       await client.query("rollback");
@@ -89,7 +91,7 @@ class PostgresStorage {
 
   async login({ email, password }) {
     const result = await this.pool.query(
-      "select id, email, role, display_name, password_hash from users where email = $1",
+      "select id, email, role, display_name, phone, password_hash from users where email = $1",
       [email.toLowerCase()],
     );
     const user = result.rows[0];
@@ -103,6 +105,7 @@ class PostgresStorage {
     return {
       user: this.mapUser(user),
       profile: await this.getProfileForUser(user),
+      address: await this.getAddressForUser(user.id),
     };
   }
 
@@ -115,7 +118,7 @@ class PostgresStorage {
   async getSession(token) {
     const result = await this.pool.query(
       `
-        select users.id, users.email, users.role, users.display_name
+        select users.id, users.email, users.role, users.display_name, users.phone
         from sessions
         join users on users.id = sessions.user_id
         where sessions.token = $1
@@ -131,11 +134,80 @@ class PostgresStorage {
     return {
       user: this.mapUser(user),
       profile: await this.getProfileForUser(user),
+      address: await this.getAddressForUser(user.id),
     };
   }
 
   async deleteSession(token) {
     await this.pool.query("delete from sessions where token = $1", [token]);
+  }
+
+  async updateAccount(userId, data) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("begin");
+      const userResult = await client.query(
+        `
+          update users
+          set email = $1, phone = $2, display_name = $3, updated_at = now()
+          where id = $4
+          returning id, email, role, display_name, phone
+        `,
+        [data.email.toLowerCase(), data.phone || "", data.fullName.split(" ")[0] || data.fullName, userId],
+      );
+
+      if (!userResult.rows[0]) {
+        const error = new Error("User not found.");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (userResult.rows[0].role === "student") {
+        await client.query(
+          "update student_profiles set full_name = $1, updated_at = now() where user_id = $2",
+          [data.fullName, userId],
+        );
+      }
+
+      await this.upsertAddress(client, userId, data.address || {});
+      await client.query("commit");
+
+      const user = userResult.rows[0];
+      return {
+        user: this.mapUser(user),
+        profile: await this.getProfileForUser(user),
+        address: await this.getAddressForUser(user.id),
+      };
+    } catch (error) {
+      await client.query("rollback");
+
+      if (error.code === "23505") {
+        error.statusCode = 409;
+        error.message = "Email already exists.";
+      }
+
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updatePassword(userId, { currentPassword, newPassword }) {
+    const result = await this.pool.query("select password_hash from users where id = $1", [userId]);
+    const user = result.rows[0];
+
+    if (!user || !verifyPassword(currentPassword, user.password_hash)) {
+      const error = new Error("Current password is incorrect.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    await this.pool.query("update users set password_hash = $1, updated_at = now() where id = $2", [
+      hashPassword(newPassword),
+      userId,
+    ]);
+    return { ok: true };
   }
 
   async getAdminSummary() {
@@ -480,12 +552,47 @@ class PostgresStorage {
     return result.rows[0] || null;
   }
 
+  async getAddressForUser(userId, client = this.pool) {
+    const result = await client.query("select * from addresses where user_id = $1 and label = 'primary'", [
+      userId,
+    ]);
+    return result.rows[0] ? this.mapAddress(result.rows[0]) : null;
+  }
+
+  async upsertAddress(client, userId, address) {
+    await client.query(
+      `
+        insert into addresses (user_id, label, line1, line2, city, region, postal_code, country)
+        values ($1, 'primary', $2, $3, $4, $5, $6, $7)
+        on conflict (user_id, label)
+        do update set
+          line1 = excluded.line1,
+          line2 = excluded.line2,
+          city = excluded.city,
+          region = excluded.region,
+          postal_code = excluded.postal_code,
+          country = excluded.country,
+          updated_at = now()
+      `,
+      [
+        userId,
+        address.line1 || "",
+        address.line2 || "",
+        address.city || "",
+        address.region || "",
+        address.postalCode || "",
+        address.country || "",
+      ],
+    );
+  }
+
   mapUser(user) {
     return {
       id: user.id,
       email: user.email,
       role: user.role,
       displayName: user.display_name || user.displayName,
+      phone: user.phone || "",
     };
   }
 
@@ -529,6 +636,17 @@ class PostgresStorage {
       duration: course.duration || "",
       description: course.description || "",
       status: course.status,
+    };
+  }
+
+  mapAddress(address) {
+    return {
+      line1: address.line1 || "",
+      line2: address.line2 || "",
+      city: address.city || "",
+      region: address.region || "",
+      postalCode: address.postal_code || "",
+      country: address.country || "",
     };
   }
 }

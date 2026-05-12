@@ -10,6 +10,7 @@ Home
   -> AI Coach Method
     -> Login
   -> Login
+    -> Create Account
 ```
 
 ## Login Flow
@@ -22,7 +23,7 @@ Login
   -> Student Dashboard
 ```
 
-The current prototype uses demonstration login only. It stores the student name and signed-in state in `localStorage`.
+The current prototype uses backend auth when served through Node and keeps a local fallback for static previews. The signup flow also collects phone and address information for the student profile.
 
 ## First Student Session
 
@@ -33,6 +34,16 @@ Student Dashboard
   -> speaking or writing sample
   -> recommended lesson
   -> lessons page
+  -> account settings
+```
+
+## Account Maintenance
+
+```text
+Account
+  -> update name, email, phone, and address
+  -> update password
+  -> persist through authenticated backend routes
 ```
 
 ## Initial Assessment Goals

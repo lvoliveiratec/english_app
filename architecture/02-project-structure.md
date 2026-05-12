@@ -4,6 +4,12 @@
 
 ```text
 english_app/
+  agents/
+    ai-coach.md
+    ai-teacher.md
+    placement-agent.md
+    pronunciation-agent.md
+    teacher-summary-agent.md
   architecture/
     README.md
     01-system-overview.md
@@ -40,13 +46,30 @@ english_app/
     smoke.spec.js
   scripts/
     migrate.js
+    seed.js
   src/
     security.js
+    server/
+      auth.js
+      cookies.js
+      http.js
+      static.js
+      validators.js
+      routes/
+        account.js
+        admin.js
+        auth.js
+        index.js
     storage/
       index.js
       memory.js
       postgres.js
+  AGENTS.md
+  .dockerignore
+  .env.example
+  Dockerfile
   app.js
+  docker-compose.yml
   index.html
   package.json
   package-lock.json
@@ -103,14 +126,20 @@ english_app/
 ## Ownership Boundaries
 
 - `architecture/`: system shape and diagrams.
+- `agents/`: product AI agent specifications and contracts.
 - `docs/`: project decisions, product notes, roadmap, and process log.
 - `db/`: PostgreSQL schema and migration SQL.
 - `kb/`: source knowledge for AI retrieval.
+- `src/server`: backend HTTP helpers, auth helpers, static serving, validators, and API routes.
 - `src/storage`: backend storage adapters for PostgreSQL and in-memory development data.
 - `src/security.js`: password hashing, token, and ID helpers.
 - `scripts/`: local backend/database utility scripts.
 - `tests/`: Playwright smoke tests for the current prototype.
 - `playwright.config.js`: end-to-end test configuration.
+- `AGENTS.md`: instructions for AI coding agents working in this repository.
+- `Dockerfile`: container runtime for local deployment experiments and Cloud Run style hosting.
+- `docker-compose.yml`: local PostgreSQL service for development.
+- `.env.example`: local environment variable template.
 - `apps/web`: future frontend application.
 - `apps/api`: future backend API.
 - `apps/workers`: future async processing jobs.

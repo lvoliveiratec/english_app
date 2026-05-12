@@ -26,6 +26,7 @@
           <a href="#dashboard" data-route="dashboard" data-student-nav hidden>Dashboard</a>
           <a href="#lessons" data-route="lessons" data-student-nav hidden>Lessons</a>
           <a href="#admin" data-route="admin" id="adminNavLink" hidden>Admin</a>
+          <a href="#account" data-route="account" id="accountNavLink" hidden>Account</a>
           <a href="#login" data-route="login" id="loginNavLink">Login</a>
           <button type="button" id="logoutButton" hidden>Logout</button>
         </nav>
@@ -191,7 +192,7 @@
               </label>
               <button class="primary-action full-width" type="submit">Sign in</button>
               <a class="secondary-action full-width" href="#signup">Create account</a>
-              <p class="form-note">
+              <p class="form-note" id="loginFeedback">
                 After signing in, you will see a personalized AI greeting with progress saved in
                 this browser.
               </p>
@@ -223,6 +224,10 @@
                 <label>
                   Password
                   <input type="password" name="password" autocomplete="new-password" required />
+                </label>
+                <label>
+                  Phone
+                  <input type="tel" name="phone" autocomplete="tel" />
                 </label>
                 <label>
                   Age
@@ -278,6 +283,36 @@
                   </select>
                 </label>
               </div>
+
+              <fieldset>
+                <legend>Address</legend>
+                <div class="form-grid two-columns">
+                  <label>
+                    Address line 1
+                    <input type="text" name="addressLine1" autocomplete="address-line1" />
+                  </label>
+                  <label>
+                    Address line 2
+                    <input type="text" name="addressLine2" autocomplete="address-line2" />
+                  </label>
+                  <label>
+                    City
+                    <input type="text" name="city" autocomplete="address-level2" />
+                  </label>
+                  <label>
+                    State/Province
+                    <input type="text" name="region" autocomplete="address-level1" />
+                  </label>
+                  <label>
+                    Postal code
+                    <input type="text" name="postalCode" autocomplete="postal-code" />
+                  </label>
+                  <label>
+                    Country
+                    <input type="text" name="country" autocomplete="country-name" />
+                  </label>
+                </div>
+              </fieldset>
 
               <fieldset>
                 <legend>Topics the student enjoys</legend>
@@ -589,6 +624,91 @@
               <a class="secondary-action" href="#dashboard">Back to dashboard</a>
             </div>
             <div class="lesson-grid" id="lessonGrid"></div>
+          </div>
+        </section>
+
+        <section class="page" id="account" data-page>
+          <div class="section-wrap">
+            <div class="section-heading">
+              <p class="eyebrow">Account</p>
+              <h1>Manage your profile, address, and password.</h1>
+            </div>
+
+            <div class="account-grid">
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Profile</p>
+                    <h2>Contact and address</h2>
+                  </div>
+                  <span class="pill">Private</span>
+                </div>
+                <form class="admin-form" id="accountForm">
+                  <div class="form-grid two-columns">
+                    <label>
+                      Full name
+                      <input type="text" name="fullName" required />
+                    </label>
+                    <label>
+                      Email
+                      <input type="email" name="email" required />
+                    </label>
+                    <label>
+                      Phone
+                      <input type="tel" name="phone" />
+                    </label>
+                    <label>
+                      Country
+                      <input type="text" name="country" />
+                    </label>
+                    <label>
+                      Address line 1
+                      <input type="text" name="addressLine1" />
+                    </label>
+                    <label>
+                      Address line 2
+                      <input type="text" name="addressLine2" />
+                    </label>
+                    <label>
+                      City
+                      <input type="text" name="city" />
+                    </label>
+                    <label>
+                      State/Province
+                      <input type="text" name="region" />
+                    </label>
+                    <label>
+                      Postal code
+                      <input type="text" name="postalCode" />
+                    </label>
+                  </div>
+                  <button class="primary-action" type="submit">Save account</button>
+                  <p class="feedback-text" id="accountFeedback"></p>
+                </form>
+              </section>
+
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Security</p>
+                    <h2>Change password</h2>
+                  </div>
+                  <span class="pill warning">Sensitive</span>
+                </div>
+                <form class="admin-form" id="passwordForm">
+                  <label>
+                    Current password
+                    <input type="password" name="currentPassword" required />
+                  </label>
+                  <label>
+                    New password
+                    <input type="password" name="newPassword" required />
+                  </label>
+                  <button class="primary-action" type="submit">Update password</button>
+                  <p class="feedback-text" id="passwordFeedback"></p>
+                </form>
+              </section>
+            </div>
           </div>
         </section>
 

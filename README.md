@@ -3,15 +3,17 @@
 First prototype of an English learning app/site with:
 
 - Home page
-- Demonstration login, logout, and local student account creation
+- Demonstration login, logout, student account creation, and account settings
 - Courses page
 - Simulated AI Coach
 - Student dashboard with profile-aware AI Teacher copy
-- Initial backend API with auth, sessions, PostgreSQL schema, and in-memory fallback
+- Initial backend API with auth, sessions, student addresses, PostgreSQL schema, and in-memory fallback
 - Admin dashboard prototype with metrics plus forms to create/edit students, teachers, plans, and courses
 - Pronunciation practice with local audio recording
 - Local audio/video recording for in-person classes, with consent
-- Playwright smoke tests for login, signup, admin, course navigation, and mobile navigation
+- Playwright smoke tests for login, signup, account settings, admin, course navigation, and mobile navigation
+- Dockerfile for container deployment experiments such as Cloud Run
+- Docker Compose service for a local PostgreSQL development database
 
 ## How to open
 
@@ -36,6 +38,13 @@ npm start
 
 The site runs at `http://127.0.0.1:5173`.
 
+For Cloud Run style environments, set:
+
+```bash
+HOST=0.0.0.0
+PORT=8080
+```
+
 ## Backend and PostgreSQL
 
 The app can run without PostgreSQL. If `DATABASE_URL` is not set, the backend uses in-memory demo data so local development and tests keep working.
@@ -45,6 +54,17 @@ To use PostgreSQL, set `DATABASE_URL` and run migrations:
 ```bash
 export DATABASE_URL="postgres://USER:PASSWORD@localhost:5432/fluentpath"
 npm run db:migrate
+npm run db:seed
+npm start
+```
+
+For the included local database:
+
+```bash
+docker compose up -d postgres
+export DATABASE_URL="postgres://fluentpath:fluentpath_dev@localhost:5432/fluentpath"
+npm run db:migrate
+npm run db:seed
 npm start
 ```
 
@@ -56,6 +76,9 @@ POST /api/auth/signup
 POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
+GET  /api/account
+PUT  /api/account
+PUT  /api/account/password
 GET  /api/admin/summary
 GET  /api/admin/resources
 POST /api/admin/students
@@ -69,12 +92,38 @@ PUT  /api/admin/courses/:id
 ```
 
 Demo accounts when using in-memory storage:
+The same accounts can be added to PostgreSQL with `npm run db:seed`.
 
 ```text
 lucas@example.com / english123
 admin@example.com / admin123
 teacher@example.com / teacher123
 ```
+
+## Docker
+
+Run PostgreSQL locally:
+
+```bash
+docker compose up -d postgres
+```
+
+Build and run the app container locally:
+
+```bash
+docker build -t fluentpath-english .
+docker run --rm -p 8080:8080 fluentpath-english
+```
+
+With PostgreSQL:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e DATABASE_URL="postgres://USER:PASSWORD@HOST:5432/fluentpath" \
+  fluentpath-english
+```
+
+For Cloud Run, configure `DATABASE_URL` as an environment variable or secret. Run migrations separately before serving production traffic.
 
 ## How to test
 
@@ -119,11 +168,14 @@ The first English knowledge base lives in `kb/english/`.
 
 The project architecture folder lives in `architecture/`.
 
+Product agent specifications live in `agents/`.
+
+Repository instructions for AI coding agents live in `AGENTS.md`.
+
 ## Next technical steps
 
-1. Add dedicated student profile endpoints for the logged-in student.
-2. Add lesson progress create/update endpoints.
-3. Add teacher-facing APIs and teacher dashboard screens.
-4. Add admin management for payments, consent, retention, and deletion policies.
-5. Add authorized audio/video upload records before processing real media.
-6. Add transcription and AI feedback pipelines using student history.
+1. Add lesson progress create/update endpoints.
+2. Add teacher-facing APIs and teacher dashboard screens.
+3. Add admin management for payments, consent, retention, and deletion policies.
+4. Add authorized audio/video upload records before processing real media.
+5. Add transcription and AI feedback pipelines using student history.

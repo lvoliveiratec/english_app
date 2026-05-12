@@ -55,7 +55,7 @@ Purpose:
 Purpose:
 
 - Capture the first student profile before the first lesson.
-- Collect personal details such as name, email, age, and native language.
+- Collect personal details such as name, email, phone, age, native language, and address.
 - Collect English-learning signals: current level, main goal, speaking confidence, and study availability.
 - Collect interests that help the AI Teacher personalize examples and speaking prompts:
   - Movies and series
@@ -67,7 +67,7 @@ Purpose:
   - Books
   - Work and business
 - Collect free-text context: favorite media, hobbies, foods/drinks, sports, and motivation.
-- Save the demo profile locally until a real backend/database exists.
+- Save the profile through the backend when available, with local fallback for static previews.
 
 Important current rule:
 
@@ -112,6 +112,15 @@ Purpose:
   - Listening
   - Pronunciation
 - Let the AI Teacher recommend lessons based on student progress and recurring mistakes.
+
+### Account
+
+Purpose:
+
+- Let signed-in users update name, email, phone, and address.
+- Let signed-in users change their password through the backend.
+- Keep contact and address maintenance separate from the initial learning questionnaire.
+- Store address data in the backend `addresses` table when PostgreSQL is configured.
 
 ## Administrative Pages
 

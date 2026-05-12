@@ -899,6 +899,13 @@ blockquote {
   align-items: start;
 }
 
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .admin-table-wrap {
   overflow-x: auto;
 }
@@ -1071,7 +1078,8 @@ button:disabled {
   .lesson-grid,
   .admin-metric-grid,
   .admin-grid,
-  .admin-management-grid {
+  .admin-management-grid,
+  .account-grid {
     grid-template-columns: 1fr;
   }
 

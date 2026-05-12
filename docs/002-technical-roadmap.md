@@ -12,9 +12,16 @@
 - Playwright smoke tests for core navigation and account flows.
 - Initial Node backend routes.
 - PostgreSQL schema and migration script.
+- PostgreSQL seed script for local/demo accounts and baseline operational data.
 - In-memory fallback storage for local development without PostgreSQL.
 - Initial admin dashboard prototype.
 - Admin management modules for students, teachers, plans/prices, and courses.
+- Backend modules split under `src/server/`.
+- Dockerfile for Cloud Run style deployment experiments.
+- Docker Compose PostgreSQL service for local database development.
+- Product agent contracts under `agents/`.
+- Signup and account settings capture contact and address data.
+- Authenticated account endpoints update profile, address, and password.
 
 ## Phase 2: Real App Foundation
 
@@ -27,6 +34,7 @@
 - Add teacher-facing APIs.
 - Add remaining admin management actions for payments, consent, retention, deletion, and policies.
 - Create secure upload records for authorized audio/video.
+- Split the frontend into modules or migrate to React + TypeScript before adding many more screens.
 
 Suggested first backend milestone:
 
@@ -35,7 +43,7 @@ Suggested first backend milestone:
 - Add endpoints for student signup, login, logout, and current user. Started.
 - Add admin summary endpoint. Started.
 - Add admin resources/create/update endpoints for students, teachers, plans, and courses. Started.
-- Add profile retrieval/update endpoints. Next.
+- Add profile retrieval/update endpoints. Started with Account.
 - Keep audio/video upload out of scope until authentication, consent, and ownership are working.
 
 ## Phase 3: Applied AI
@@ -60,6 +68,7 @@ Suggested first backend milestone:
 
 - Define frontend, backend, database, and AI Coach agent responsibilities.
 - Define the AI Teacher Agent as the instructional agent for teaching, correction, speech feedback, and writing feedback.
+- Maintain agent contracts in `agents/`.
 - Build knowledge bases for curriculum, platform help, correction style, and privacy policies.
 - Build and expand the English KB in `kb/english/`.
 - Add RAG retrieval for curriculum, teacher materials, student memory, and session summaries.

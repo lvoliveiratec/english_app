@@ -6,8 +6,26 @@ create table if not exists users (
   password_hash text not null,
   role text not null check (role in ('student', 'teacher', 'admin')),
   display_name text not null,
+  phone text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+alter table users add column if not exists phone text;
+
+create table if not exists addresses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  label text not null default 'primary',
+  line1 text,
+  line2 text,
+  city text,
+  region text,
+  postal_code text,
+  country text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, label)
 );
 
 create table if not exists student_profiles (

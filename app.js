@@ -5,9 +5,11 @@ const nav = document.querySelector(".nav-links");
 const loginForm = document.querySelector("#loginForm");
 const signupForm = document.querySelector("#signupForm");
 const signupFeedback = document.querySelector("#signupFeedback");
+const loginFeedback = document.querySelector("#loginFeedback");
 const loginNavLink = document.querySelector("#loginNavLink");
 const logoutButton = document.querySelector("#logoutButton");
 const adminNavLink = document.querySelector("#adminNavLink");
+const accountNavLink = document.querySelector("#accountNavLink");
 const courseGrid = document.querySelector("#courseGrid");
 const lessonGrid = document.querySelector("#lessonGrid");
 const studentNavLinks = [...document.querySelectorAll("[data-student-nav]")];
@@ -62,6 +64,10 @@ const adminStudentFeedback = document.querySelector("#adminStudentFeedback");
 const adminTeacherFeedback = document.querySelector("#adminTeacherFeedback");
 const adminPlanFeedback = document.querySelector("#adminPlanFeedback");
 const adminCourseFeedback = document.querySelector("#adminCourseFeedback");
+const accountForm = document.querySelector("#accountForm");
+const passwordForm = document.querySelector("#passwordForm");
+const accountFeedback = document.querySelector("#accountFeedback");
+const passwordFeedback = document.querySelector("#passwordFeedback");
 
 const courses = [
   {
@@ -183,10 +189,21 @@ function readStoredPlacement() {
   }
 }
 
+function readStoredAddress() {
+  try {
+    return JSON.parse(localStorage.getItem("fluentpath:address")) || null;
+  } catch (error) {
+    return null;
+  }
+}
+
 const state = {
   studentProfile: readStoredStudentProfile(),
   placement: readStoredPlacement(),
   userName: localStorage.getItem("fluentpath:user") || "Student",
+  userEmail: localStorage.getItem("fluentpath:email") || "",
+  userPhone: localStorage.getItem("fluentpath:phone") || "",
+  address: readStoredAddress(),
   userRole:
     localStorage.getItem("fluentpath:role") ||
     (localStorage.getItem("fluentpath:signedIn") === "true" ? "student" : ""),
@@ -203,7 +220,7 @@ const adminState = {
   courses: [],
 };
 
-const protectedRoutes = ["dashboard", "lessons", "admin"];
+const protectedRoutes = ["dashboard", "lessons", "admin", "account"];
 
 function isAdmin() {
   return state.isSignedIn && state.userRole === "admin";
@@ -244,6 +261,10 @@ function setRoute(routeName) {
 
   if (safeRoute === "admin") {
     renderAdminSummary();
+  }
+
+  if (safeRoute === "account") {
+    fillAccountForm();
   }
 }
 
@@ -342,21 +363,37 @@ function applySessionPayload(payload) {
     ? {
         ...payload.profile,
         email: user.email || payload.profile.email || "",
+        phone: user.phone || payload.profile.phone || "",
       }
     : null;
 
+  const address = payload.address || profile?.address || null;
+
+  if (profile) {
+    profile.address = address;
+  }
+
   state.userName = user.displayName || profile?.fullName?.split(" ")[0] || "Student";
+  state.userEmail = user.email || profile?.email || "";
+  state.userPhone = user.phone || profile?.phone || "";
   state.userRole = user.role || "student";
   state.studentProfile = state.userRole === "student" ? profile : null;
+  state.address = address;
   state.placement = readStoredPlacement();
   state.isSignedIn = true;
 
   localStorage.setItem("fluentpath:user", state.userName);
+  localStorage.setItem("fluentpath:email", state.userEmail);
+  localStorage.setItem("fluentpath:phone", state.userPhone);
   localStorage.setItem("fluentpath:role", state.userRole);
   localStorage.setItem("fluentpath:signedIn", "true");
 
   if (profile) {
     localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
+  }
+
+  if (state.address) {
+    localStorage.setItem("fluentpath:address", JSON.stringify(state.address));
   }
 }
 
@@ -428,13 +465,26 @@ function refreshSessionCopy() {
   loginNavLink.hidden = state.isSignedIn;
   logoutButton.hidden = !state.isSignedIn;
   adminNavLink.hidden = !isAdmin();
+  accountNavLink.hidden = !state.isSignedIn;
   renderProgressMetrics();
+}
+
+function buildAddress(formData) {
+  return {
+    line1: formData.get("addressLine1")?.toString().trim() || "",
+    line2: formData.get("addressLine2")?.toString().trim() || "",
+    city: formData.get("city")?.toString().trim() || "",
+    region: formData.get("region")?.toString().trim() || "",
+    postalCode: formData.get("postalCode")?.toString().trim() || "",
+    country: formData.get("country")?.toString().trim() || "",
+  };
 }
 
 function buildStudentProfile(formData) {
   return {
     fullName: formData.get("fullName")?.toString().trim() || "Student",
     email: formData.get("email")?.toString().trim() || "",
+    phone: formData.get("phone")?.toString().trim() || "",
     age: formData.get("age")?.toString().trim() || "",
     nativeLanguage: formData.get("nativeLanguage")?.toString().trim() || "",
     level: formData.get("level")?.toString() || "I am not sure yet",
@@ -447,8 +497,70 @@ function buildStudentProfile(formData) {
     foodAndDrinks: formData.get("foodAndDrinks")?.toString().trim() || "",
     sports: formData.get("sports")?.toString().trim() || "",
     motivation: formData.get("motivation")?.toString().trim() || "",
+    address: buildAddress(formData),
     createdAt: new Date().toISOString(),
   };
+}
+
+function readAccountForm() {
+  const formData = new FormData(accountForm);
+
+  return {
+    fullName: formData.get("fullName")?.toString().trim() || "Student",
+    email: formData.get("email")?.toString().trim() || "",
+    phone: formData.get("phone")?.toString().trim() || "",
+    address: buildAddress(formData),
+  };
+}
+
+function fillAccountForm() {
+  if (!accountForm) {
+    return;
+  }
+
+  const profile = state.studentProfile || {};
+  const address = state.address || profile.address || {};
+
+  accountForm.elements.fullName.value = profile.fullName || state.userName || "";
+  accountForm.elements.email.value = state.userEmail || profile.email || "";
+  accountForm.elements.phone.value = state.userPhone || profile.phone || "";
+  accountForm.elements.country.value = address.country || "";
+  accountForm.elements.addressLine1.value = address.line1 || "";
+  accountForm.elements.addressLine2.value = address.line2 || "";
+  accountForm.elements.city.value = address.city || "";
+  accountForm.elements.region.value = address.region || "";
+  accountForm.elements.postalCode.value = address.postalCode || "";
+}
+
+function applyLocalAccountUpdate(data) {
+  state.userName = data.fullName.split(" ")[0] || data.fullName || state.userName;
+  state.userEmail = data.email;
+  state.userPhone = data.phone;
+  state.address = data.address;
+
+  if (state.studentProfile) {
+    state.studentProfile = {
+      ...state.studentProfile,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+    };
+    localStorage.setItem("fluentpath:studentProfile", JSON.stringify(state.studentProfile));
+  }
+
+  localStorage.setItem("fluentpath:user", state.userName);
+  localStorage.setItem("fluentpath:email", state.userEmail);
+  localStorage.setItem("fluentpath:phone", state.userPhone);
+  localStorage.setItem("fluentpath:address", JSON.stringify(state.address));
+}
+
+function shouldUseLocalFallback(error) {
+  return (
+    error instanceof SyntaxError ||
+    error.message.includes("Unexpected token") ||
+    error.message.includes("Failed to fetch")
+  );
 }
 
 async function signOut() {
@@ -460,11 +572,19 @@ async function signOut() {
 
   state.userName = "Student";
   state.userRole = "";
+  state.userEmail = "";
+  state.userPhone = "";
+  state.studentProfile = null;
+  state.address = null;
   state.placement = null;
   state.isSignedIn = false;
   localStorage.removeItem("fluentpath:user");
+  localStorage.removeItem("fluentpath:email");
+  localStorage.removeItem("fluentpath:phone");
   localStorage.removeItem("fluentpath:role");
   localStorage.removeItem("fluentpath:signedIn");
+  localStorage.removeItem("fluentpath:studentProfile");
+  localStorage.removeItem("fluentpath:address");
   localStorage.removeItem("fluentpath:placement");
   refreshSessionCopy();
   navigateTo("home");
@@ -906,16 +1026,27 @@ loginForm.addEventListener("submit", async (event) => {
     });
     applySessionPayload(payload);
   } catch (error) {
+    if (!shouldUseLocalFallback(error)) {
+      loginFeedback.textContent = error.message;
+      return;
+    }
+
     state.userName = fallbackName;
+    state.userEmail = email;
+    state.userPhone = "";
     state.userRole = email === "admin@example.com" ? "admin" : "student";
     state.studentProfile = readStoredStudentProfile();
+    state.address = readStoredAddress();
     state.placement = readStoredPlacement();
     state.isSignedIn = true;
     localStorage.setItem("fluentpath:user", state.userName);
+    localStorage.setItem("fluentpath:email", state.userEmail);
+    localStorage.setItem("fluentpath:phone", state.userPhone);
     localStorage.setItem("fluentpath:role", state.userRole);
     localStorage.setItem("fluentpath:signedIn", "true");
   }
 
+  loginFeedback.textContent = "Signed in.";
   refreshSessionCopy();
   navigateTo(isAdmin() ? "admin" : "dashboard");
 });
@@ -937,13 +1068,24 @@ signupForm.addEventListener("submit", async (event) => {
     });
     applySessionPayload(payload);
   } catch (error) {
+    if (!shouldUseLocalFallback(error)) {
+      signupFeedback.textContent = error.message;
+      return;
+    }
+
     state.studentProfile = profile;
     state.userName = profile.fullName.split(" ")[0] || "Student";
+    state.userEmail = profile.email;
+    state.userPhone = profile.phone;
     state.userRole = "student";
+    state.address = profile.address;
     state.placement = null;
     state.isSignedIn = true;
     localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
     localStorage.setItem("fluentpath:user", state.userName);
+    localStorage.setItem("fluentpath:email", state.userEmail);
+    localStorage.setItem("fluentpath:phone", state.userPhone);
+    localStorage.setItem("fluentpath:address", JSON.stringify(state.address));
     localStorage.setItem("fluentpath:role", state.userRole);
     localStorage.setItem("fluentpath:signedIn", "true");
   }
@@ -990,6 +1132,52 @@ placementForm.addEventListener("submit", (event) => {
   renderProgressMetrics();
 
   assessmentFeedback.textContent = `Saved. Your AI Teacher will start with ${level} material focused on ${goal.toString().toLowerCase()}. The dashboard now shows an initial baseline estimate, not a measured score yet.`;
+});
+
+accountForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const account = readAccountForm();
+
+  try {
+    const payload = await apiRequest("/api/account", {
+      method: "PUT",
+      body: JSON.stringify(account),
+    });
+    applySessionPayload(payload);
+    accountFeedback.textContent = "Account updated.";
+  } catch (error) {
+    if (!shouldUseLocalFallback(error)) {
+      accountFeedback.textContent = error.message;
+      return;
+    }
+
+    applyLocalAccountUpdate(account);
+    accountFeedback.textContent = "Account updated locally. Start the backend to persist it.";
+  }
+
+  refreshSessionCopy();
+  fillAccountForm();
+});
+
+passwordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const formData = new FormData(passwordForm);
+
+  try {
+    await apiRequest("/api/account/password", {
+      method: "PUT",
+      body: JSON.stringify({
+        currentPassword: formData.get("currentPassword")?.toString() || "",
+        newPassword: formData.get("newPassword")?.toString() || "",
+      }),
+    });
+    passwordForm.reset();
+    passwordFeedback.textContent = "Password updated.";
+  } catch (error) {
+    passwordFeedback.textContent = shouldUseLocalFallback(error)
+      ? "Password changes require the backend API."
+      : error.message;
+  }
 });
 
 adminStudentForm.addEventListener("submit", (event) => {

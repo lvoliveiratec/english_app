@@ -56,6 +56,17 @@ This document records what we are building and why each step was taken.
 - Added admin API endpoints to list, create, and update students, teachers, plans, and courses.
 - Added a `plans` table to the PostgreSQL schema and added admin course fields for description/status.
 - Extended Playwright admin coverage to create student, teacher, plan, course, and update a course.
+- Refactored the backend from a monolithic `server.js` into `src/server/` modules for HTTP helpers, cookies, auth, validators, static serving, and route handlers.
+- Added `Dockerfile` and `.dockerignore` for container deployment experiments and Cloud Run style hosting.
+- Added root `AGENTS.md` for repository-level AI coding agent instructions.
+- Added product agent specification files in `agents/` for AI Coach, AI Teacher, Placement, Pronunciation, and Teacher Summary agents.
+- Added `docker-compose.yml` with a local PostgreSQL service for development.
+- Added `npm run db:seed` to create demo student, teacher, admin, address, plan, course, payment, and progress data in PostgreSQL.
+- Added `users.phone` and an `addresses` table so student location/contact data can be stored server-side.
+- Added address fields to student signup.
+- Added an authenticated Account page where users can update name, email, phone, address, and password.
+- Added Account API routes for profile updates and password changes.
+- Expanded Playwright coverage for signup address data and account settings.
 
 ## Important Decisions
 
@@ -66,3 +77,4 @@ This document records what we are building and why each step was taken.
 - Raw media should be treated as sensitive data; AI should prefer derived artifacts such as transcripts, summaries, and pronunciation metrics when possible.
 - Passwords must never be stored directly in frontend storage or plain database fields.
 - The local student profile is a prototype data shape, not a production storage model.
+- User address and contact changes belong behind authenticated account routes, not public profile-only storage.

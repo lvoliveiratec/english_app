@@ -11,6 +11,8 @@
 - Add Playwright smoke tests for core flows.
 - Add initial backend API with PostgreSQL schema and memory fallback.
 - Add first admin dashboard prototype.
+- Add local PostgreSQL through Docker Compose.
+- Add account settings for contact, address, and password updates.
 - Keep all copy English-only.
 - Keep documentation updated.
 
@@ -31,7 +33,7 @@
 - Add migrations.
 - Add user, session, student profile, teacher profile, admin profile, course, lesson, progress, consent, and media models.
 - Add API contracts for frontend.
-- Connect signup, login, logout, and current profile to the backend.
+- Connect signup, login, logout, current profile, account update, and password update to the backend.
 - Add admin summary API and administrative dashboard.
 - Keep media upload out of the first backend milestone until auth and consent are in place.
 

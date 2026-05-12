@@ -17,6 +17,7 @@ function createDemoState() {
         passwordHash: hashPassword("english123"),
         role: "student",
         displayName: "Lucas",
+        phone: "+1 555 0100",
         createdAt: nowIso(),
       },
       {
@@ -58,6 +59,20 @@ function createDemoState() {
     ],
     teacherProfiles: [{ userId: teacherId, fullName: "Ana Teacher", status: "active" }],
     adminProfiles: [{ userId: adminId, fullName: "Admin", status: "active" }],
+    addresses: [
+      {
+        userId: studentId,
+        label: "primary",
+        line1: "123 Main Street",
+        line2: "",
+        city: "Calgary",
+        region: "AB",
+        postalCode: "T2P 1J9",
+        country: "Canada",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      },
+    ],
     sessions: [],
     lessonProgress: [
       {
@@ -126,6 +141,7 @@ class MemoryStorage {
       passwordHash: hashPassword(password),
       role: "student",
       displayName: profile.fullName.split(" ")[0] || profile.fullName,
+      phone: profile.phone || "",
       createdAt: now,
     };
     const studentProfile = {
@@ -137,6 +153,7 @@ class MemoryStorage {
 
     this.state.users.push(user);
     this.state.studentProfiles.push(studentProfile);
+    this.upsertAddress(userId, profile.address || {});
 
     return this.toSessionPayload(user, studentProfile);
   }
@@ -178,6 +195,43 @@ class MemoryStorage {
 
   async deleteSession(token) {
     this.state.sessions = this.state.sessions.filter((item) => item.token !== token);
+  }
+
+  async updateAccount(userId, data) {
+    const user = this.state.users.find((item) => item.id === userId);
+
+    if (!user) {
+      const error = new Error("User not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    user.email = data.email?.toLowerCase() || user.email;
+    user.phone = data.phone || "";
+    user.displayName = data.fullName?.split(" ")[0] || user.displayName;
+
+    const profile = this.getProfileForUser(user);
+
+    if (profile?.fullName && data.fullName) {
+      profile.fullName = data.fullName;
+      profile.updatedAt = nowIso();
+    }
+
+    this.upsertAddress(userId, data.address || {});
+    return this.toSessionPayload(user, this.getProfileForUser(user));
+  }
+
+  async updatePassword(userId, { currentPassword, newPassword }) {
+    const user = this.state.users.find((item) => item.id === userId);
+
+    if (!user || !verifyPassword(currentPassword, user.passwordHash)) {
+      const error = new Error("Current password is incorrect.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    user.passwordHash = hashPassword(newPassword);
+    return { ok: true };
   }
 
   async getAdminSummary() {
@@ -431,6 +485,33 @@ class MemoryStorage {
     return this.state.adminProfiles.find((profile) => profile.userId === user.id) || null;
   }
 
+  getAddressForUser(userId) {
+    return this.state.addresses.find((address) => address.userId === userId) || null;
+  }
+
+  upsertAddress(userId, address) {
+    const existing = this.getAddressForUser(userId);
+    const next = {
+      userId,
+      label: "primary",
+      line1: address.line1 || "",
+      line2: address.line2 || "",
+      city: address.city || "",
+      region: address.region || "",
+      postalCode: address.postalCode || "",
+      country: address.country || "",
+      updatedAt: nowIso(),
+    };
+
+    if (existing) {
+      Object.assign(existing, next);
+      return existing;
+    }
+
+    this.state.addresses.push({ ...next, createdAt: nowIso() });
+    return next;
+  }
+
   toSessionPayload(user, profile) {
     return {
       user: {
@@ -438,8 +519,10 @@ class MemoryStorage {
         email: user.email,
         role: user.role,
         displayName: user.displayName,
+        phone: user.phone || "",
       },
       profile,
+      address: this.getAddressForUser(user.id),
     };
   }
 }
