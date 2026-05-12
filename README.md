@@ -10,6 +10,7 @@ First prototype of an English learning app/site with:
 - Initial backend API with auth, sessions, student addresses, PostgreSQL schema, and in-memory fallback
 - Admin dashboard prototype with metrics plus forms to create/edit students, teachers, plans, and courses
 - Pronunciation practice with local audio recording
+- Pronunciation attempt records with student, phrase, timestamp, and processing status
 - Local audio/video recording for in-person classes, with consent
 - Playwright smoke tests for login, signup, account settings, admin, course navigation, and mobile navigation
 - Dockerfile for container deployment experiments such as Cloud Run
@@ -79,6 +80,7 @@ GET  /api/auth/me
 GET  /api/account
 PUT  /api/account
 PUT  /api/account/password
+POST /api/pronunciation-attempts
 GET  /api/admin/summary
 GET  /api/admin/resources
 POST /api/admin/students
@@ -99,6 +101,8 @@ lucas@example.com / english123
 admin@example.com / admin123
 teacher@example.com / teacher123
 ```
+
+When the app is served over HTTP/HTTPS, login, signup, admin, account, and pronunciation attempts are expected to use the backend API. Local browser fallback is kept only for opening `index.html` directly as a static file.
 
 ## Docker
 

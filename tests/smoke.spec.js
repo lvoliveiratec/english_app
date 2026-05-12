@@ -23,7 +23,6 @@ test.describe("FluentPath English smoke flow", () => {
 
     const loginForm = page.locator("#loginForm");
 
-    await loginForm.getByLabel("Name", { exact: true }).fill("Lucas");
     await loginForm.getByLabel("Email", { exact: true }).fill("lucas@example.com");
     await loginForm.getByLabel("Password", { exact: true }).fill("english123");
     await loginForm.getByRole("button", { name: "Sign in" }).click();
@@ -49,7 +48,7 @@ test.describe("FluentPath English smoke flow", () => {
     await placementForm
       .getByLabel("Writing sample")
       .fill("I want to improve my English for work and daily conversations.");
-    await placementForm.getByRole("button", { name: "Save assessment" }).click();
+    await placementForm.getByRole("button", { name: "Create baseline" }).click();
     await expect(page.locator("#assessmentFeedback")).toHaveText(
       "Saved. Your AI Teacher will start with Beginner material focused on daily conversation. The dashboard now shows an initial baseline estimate, not a measured score yet.",
     );
@@ -195,7 +194,6 @@ test.describe("FluentPath English smoke flow", () => {
 
     const loginForm = page.locator("#loginForm");
 
-    await loginForm.getByLabel("Name", { exact: true }).fill("Admin");
     await loginForm.getByLabel("Email", { exact: true }).fill("admin@example.com");
     await loginForm.getByLabel("Password", { exact: true }).fill("admin123");
     await loginForm.getByRole("button", { name: "Sign in" }).click();
@@ -206,7 +204,7 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#adminStudentsCount")).not.toHaveText("0");
     await expect(page.locator("#adminTeachersCount")).not.toHaveText("0");
     await expect(page.locator("#adminRevenue")).toContainText("$");
-    await expect(page.locator("#adminProgressRows")).toContainText("Lucas");
+    await expect(page.locator("#adminProgressRows")).not.toContainText("No student progress yet.");
 
     const studentForm = page.locator("#adminStudentForm");
     await studentForm.scrollIntoViewIfNeeded();

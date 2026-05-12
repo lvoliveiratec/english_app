@@ -173,22 +173,18 @@
             </div>
             <form class="login-box" id="loginForm" action="#dashboard">
               <label>
-                Name
-                <input type="text" name="name" value="Lucas" autocomplete="name" required />
-              </label>
-              <label>
                 Email
                 <input
                   type="email"
                   name="email"
-                  value="lucas@example.com"
+                  placeholder="you@example.com"
                   autocomplete="email"
                   required
                 />
               </label>
               <label>
                 Password
-                <input type="password" name="password" value="english123" autocomplete="current-password" />
+                <input type="password" name="password" autocomplete="current-password" />
               </label>
               <button class="primary-action full-width" type="submit">Sign in</button>
               <a class="secondary-action full-width" href="#signup">Create account</a>
@@ -517,6 +513,20 @@
                   <blockquote id="practicePhrase">
                     I thought the world was comfortable enough for a short conversation.
                   </blockquote>
+                  <div class="phrase-study" aria-label="Phrase study notes">
+                    <div>
+                      <span>Meaning</span>
+                      <p id="phraseMeaning"></p>
+                    </div>
+                    <div>
+                      <span>Form</span>
+                      <p id="phraseForm"></p>
+                    </div>
+                    <div>
+                      <span>Pronunciation focus</span>
+                      <p id="phraseTip"></p>
+                    </div>
+                  </div>
                   <div class="practice-actions">
                     <button class="secondary-action" type="button" id="newPhraseButton">
                       New phrase
@@ -534,14 +544,14 @@
               <section class="workspace-panel">
                 <div class="panel-heading">
                   <div>
-                    <p class="eyebrow">First assessment</p>
-                    <h2>Help your AI Teacher understand you</h2>
+                    <p class="eyebrow">Placement baseline</p>
+                    <h2>Confirm the starting point from your profile</h2>
                   </div>
                   <span class="pill">Placement</span>
                 </div>
                 <form class="assessment-form" id="placementForm">
                   <label>
-                    Current level
+                    Profile level
                     <select name="level" required>
                       <option value="">Choose one</option>
                       <option>Beginner</option>
@@ -552,7 +562,7 @@
                     </select>
                   </label>
                   <label>
-                    Main goal
+                    Profile goal
                     <select name="goal" required>
                       <option value="">Choose one</option>
                       <option>Daily conversation</option>
@@ -563,18 +573,18 @@
                     </select>
                   </label>
                   <label>
-                    Writing sample
+                    Extra writing sample
                     <textarea
                       name="writing"
                       rows="4"
-                      placeholder="Write 3-4 sentences about why you want to improve your English."
+                      placeholder="Optional: add a few new sentences if your goal or context changed."
                     ></textarea>
                   </label>
-                  <button class="primary-action" type="submit">Save assessment</button>
+                  <button class="primary-action" type="submit">Create baseline</button>
                 </form>
                 <p class="feedback-text" id="assessmentFeedback">
-                  Your answers will shape your first lessons, speaking drills, and vocabulary
-                  review.
+                  Your signup profile already gives the AI Teacher context. Use this only to
+                  confirm or adjust the initial baseline.
                 </p>
               </section>
 

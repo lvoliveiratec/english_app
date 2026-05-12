@@ -9,8 +9,10 @@ Use Postgres as the system of record.
 Core entities:
 
 - `users`: authentication identity, role, locale, status.
-- `students`: user linkage, English level, goals, consent flags.
-- `teachers`: user linkage, permissions, assigned cohorts.
+- `student_profiles`: user linkage, English level, goals, profile questionnaire, learning context.
+- `teacher_profiles`: user linkage, specialty, status, future assigned cohorts.
+- `admin_profiles`: user linkage and admin status.
+- `addresses`: contact/location data tied to users.
 - `courses`: curriculum container.
 - `units`: course sections.
 - `lessons`: metadata, skill focus, CEFR level, objectives.
@@ -23,6 +25,7 @@ Core entities:
 - `student_progress`: normalized progress snapshots by skill/course/unit.
 - `media_assets`: owner student, asset type, storage URI, duration, MIME type, processing state.
 - `media_derivatives`: transcript, waveform, thumbnail, compressed versions, pronunciation metrics.
+- `pronunciation_attempts`: current metadata record for read-out-loud practice attempts.
 - `content_documents`: curriculum and teacher-uploaded learning materials.
 - `rag_chunks`: chunk metadata, source document, permissions, embedding reference.
 - `audit_events`: access, export, deletion, admin actions.
@@ -39,6 +42,12 @@ Suggested prefixes:
 - `exports/{request_id}` for temporary student data exports.
 
 The database stores metadata only: owner, object key, checksum, size, duration, consent state, retention state, processing status, and access classification.
+
+Current prototype state:
+
+- Read-out-loud recording creates a `pronunciation_attempts` row with student ID, phrase, duration estimate, local size estimate, timestamp, and `recorded_locally` status.
+- Raw audio is still local to the browser.
+- Future upload processing should update the attempt with object-storage URL, transcript, pronunciation metrics, and analysis state.
 
 ## RAG Indexes
 
@@ -77,6 +86,8 @@ Recommended flow:
 5. Retrieve by task context, student, course, and visibility boundary.
 6. Rerank.
 7. Assemble a compact context packet for the AI Coach.
+
+For pronunciation attempts, only derived artifacts should enter RAG: transcripts, summaries, pronunciation metrics, recurring-error records, and teacher-approved notes. Raw audio should stay in object storage with explicit consent, retention, and deletion controls.
 
 ## Privacy Boundaries
 

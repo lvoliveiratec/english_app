@@ -60,6 +60,7 @@ english_app/
         admin.js
         auth.js
         index.js
+        pronunciation.js
     storage/
       index.js
       memory.js

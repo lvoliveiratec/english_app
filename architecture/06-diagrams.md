@@ -9,25 +9,32 @@ flowchart LR
   Visitor[Visitor] --> Web[Web App]
   Student[Student] --> Web
   Teacher[Teacher] --> Web
+  Admin[Admin] --> Web
 
   Web --> API[Backend API]
   API --> DB[(Postgres)]
-  API --> Storage[(Object Storage)]
-  API --> RAG[RAG Retrieval Layer]
-  API --> AI[AI Orchestration]
+  API --> Memory[In-Memory Fallback]
+  API -. future .-> Storage[(Object Storage)]
+  API -. future .-> RAG[RAG Retrieval Layer]
+  API -. future .-> AI[AI Orchestration]
 
-  Storage --> Workers[Media Workers]
-  Workers --> Transcripts[Transcripts And Metrics]
-  Transcripts --> DB
-  Transcripts --> RAG
+  DB --> Users[Users And Profiles]
+  DB --> AdminData[Admin Data]
+  DB --> Attempts[Pronunciation Attempts]
+  DB --> Progress[Lesson Progress]
 
-  RAG --> EnglishKB[English KB]
-  RAG --> CurriculumKB[Curriculum KB]
-  RAG --> StudentMemory[Student Memory]
-  RAG --> TeacherMaterials[Teacher Materials]
+  Storage -. future .-> Workers[Media Workers]
+  Workers -. future .-> Transcripts[Transcripts And Metrics]
+  Transcripts -. future .-> DB
+  Transcripts -. future .-> RAG
 
-  AI --> Coach[AI Coach]
-  AI --> TeacherAgent[AI Teacher Agent]
+  RAG -. future .-> EnglishKB[English KB]
+  RAG -. future .-> CurriculumKB[Curriculum KB]
+  RAG -. future .-> StudentMemory[Student Memory]
+  RAG -. future .-> TeacherMaterials[Teacher Materials]
+
+  AI -. future .-> Coach[AI Coach]
+  AI -. future .-> TeacherAgent[AI Teacher Agent]
 ```
 
 ## Public To Student Flow
@@ -40,12 +47,60 @@ flowchart TD
   CourseDetail --> Login[Login Page]
   Method --> Login
   Home --> Login
-  Login --> Dashboard[Student Dashboard]
-  Dashboard --> Assessment[Initial Assessment]
+  Login --> Signup[Create Account]
+  Signup --> Dashboard[Student Dashboard]
+  Login --> Dashboard
+  Dashboard --> Baseline[Placement Baseline]
+  Dashboard --> Pronunciation[Read Out Loud Practice]
   Dashboard --> Lessons[Lessons Page]
+  Dashboard --> Account[Account Settings]
+  Pronunciation --> Attempt[Pronunciation Attempt Record]
   Lessons --> Feedback[AI Teacher Feedback]
   Feedback --> Memory[Student Learning Signals]
   Memory --> Dashboard
+```
+
+## Backend API Structure
+
+```mermaid
+flowchart TD
+  Server[server.js] --> Router[src/server/routes/index.js]
+  Router --> Auth[auth routes]
+  Router --> Account[account routes]
+  Router --> Admin[admin routes]
+  Router --> Pronunciation[pronunciation routes]
+  Router --> Static[static file serving]
+
+  Auth --> Storage[src/storage]
+  Account --> Storage
+  Admin --> Storage
+  Pronunciation --> Storage
+
+  Storage --> Pg[PostgreSQL adapter]
+  Storage --> Mem[Memory adapter]
+  Pg --> Schema[db/schema.sql]
+  Schema --> Users[users and profiles]
+  Schema --> Addresses[addresses]
+  Schema --> Plans[plans and payments]
+  Schema --> Attempts[pronunciation_attempts]
+```
+
+## Admin Flow
+
+```mermaid
+flowchart TD
+  AdminLogin[Admin Login] --> AdminDashboard[Admin Dashboard]
+  AdminDashboard --> Summary[Operational Summary]
+  AdminDashboard --> Students[Create Or Edit Students]
+  AdminDashboard --> Teachers[Create Or Edit Teachers]
+  AdminDashboard --> Plans[Create Or Edit Plans]
+  AdminDashboard --> Courses[Create Or Edit Courses]
+
+  Summary --> DB[(Postgres Or Memory)]
+  Students --> DB
+  Teachers --> DB
+  Plans --> DB
+  Courses --> DB
 ```
 
 ## AI Teacher Context Flow
@@ -79,8 +134,13 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  Consent[Consent Captured] --> Upload[Signed Upload]
-  Upload --> RawMedia[(Raw Media Storage)]
+  Practice[Read Out Loud Recording] --> LocalAudio[Raw Audio In Browser]
+  LocalAudio --> Attempt[Pronunciation Attempt Metadata]
+  Attempt --> DB[(Postgres)]
+  Attempt --> Status[recorded_locally]
+
+  Consent[Future Consent Captured] --> Upload[Future Signed Upload]
+  Upload --> RawMedia[(Object Storage)]
   RawMedia --> Job[Processing Job]
   Job --> Normalize[Normalize Audio/Video]
   Normalize --> Transcribe[Transcription]
@@ -99,14 +159,26 @@ flowchart TD
   Repo[english_app] --> Architecture[architecture]
   Repo --> Docs[docs]
   Repo --> KB[kb]
-  Repo --> Prototype[Static Prototype]
-  Prototype --> HTML[index.html]
-  Prototype --> CSS[styles.css]
-  Prototype --> JS[app.js]
-  Prototype --> Server[server.js]
+  Repo --> Agents[agents]
+  Repo --> Frontend[Current Frontend]
+  Repo --> Backend[Node Backend]
+  Repo --> Database[Database]
+  Repo --> Docker[Docker]
+
+  Frontend --> HTML[index.html]
+  Frontend --> CSS[styles.css]
+  Frontend --> JS[app.js]
+  Backend --> Server[server.js]
+  Backend --> ServerModules[src/server]
+  Backend --> StorageAdapters[src/storage]
+  Database --> Schema[db/schema.sql]
+  Database --> Seed[scripts/seed.js]
+  Docker --> Compose[docker-compose.yml]
+  Docker --> Dockerfile[Dockerfile]
+
   KB --> EnglishKB[english]
   Docs --> Process[process log]
   Docs --> Roadmap[roadmap]
-  Docs --> Agents[agent roles]
+  Docs --> AgentDocs[agent roles]
   Architecture --> Diagrams[diagrams]
 ```

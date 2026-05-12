@@ -33,6 +33,7 @@ Responsibilities:
 - Course, lesson, assignment, and progress APIs.
 - Media upload authorization and processing job creation.
 - AI practice endpoint orchestration.
+- Pronunciation attempt metadata and processing status APIs.
 - Privacy, audit, export, and deletion workflows.
 
 ## Database Agent
@@ -43,6 +44,7 @@ Responsibilities:
 
 - Postgres schema design.
 - Student, teacher, course, lesson, progress, media, payment, and audit entities.
+- Address and pronunciation attempt entities.
 - Data retention fields and deletion workflows.
 - Permission boundaries for student-specific records.
 - Database migrations and seed data.
@@ -76,6 +78,7 @@ Responsibilities:
 - Use the English KB in `kb/english/` as its global teaching foundation.
 - Adapt teaching to the student's CEFR level, goals, mistakes, and lesson progress.
 - Check pronunciation using transcripts, speech timing, pronunciation metrics, and recurring sound errors.
+- Use pronunciation attempt metadata as a processing record, not as a measured score until transcript/metrics exist.
 - Check spelling, grammar, word choice, sentence structure, and writing clarity.
 - Generate drills for pronunciation, vocabulary, grammar, conversation, roleplay, and writing.
 - Save compact learning signals for future personalization.

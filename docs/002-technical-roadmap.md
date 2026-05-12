@@ -22,6 +22,7 @@
 - Product agent contracts under `agents/`.
 - Signup and account settings capture contact and address data.
 - Authenticated account endpoints update profile, address, and password.
+- Pronunciation attempts create backend metadata with student, phrase, timestamp, and processing status.
 
 ## Phase 2: Real App Foundation
 
@@ -44,6 +45,7 @@ Suggested first backend milestone:
 - Add admin summary endpoint. Started.
 - Add admin resources/create/update endpoints for students, teachers, plans, and courses. Started.
 - Add profile retrieval/update endpoints. Started with Account.
+- Add pronunciation attempt records. Started with metadata only.
 - Keep audio/video upload out of scope until authentication, consent, and ownership are working.
 
 ## Phase 3: Applied AI

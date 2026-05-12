@@ -32,6 +32,9 @@ const pronunciationValue = document.querySelector("#pronunciationValue");
 const pronunciationMeter = document.querySelector("#pronunciationMeter");
 const progressNote = document.querySelector("#progressNote");
 const practicePhrase = document.querySelector("#practicePhrase");
+const phraseMeaning = document.querySelector("#phraseMeaning");
+const phraseForm = document.querySelector("#phraseForm");
+const phraseTip = document.querySelector("#phraseTip");
 const newPhraseButton = document.querySelector("#newPhraseButton");
 const recordVoiceButton = document.querySelector("#recordVoiceButton");
 const voiceFeedback = document.querySelector("#voiceFeedback");
@@ -166,11 +169,36 @@ const lessons = [
 ];
 
 const phrases = [
-  "I thought the world was comfortable enough for a short conversation.",
-  "Could you repeat the question before I answer?",
-  "I usually practice pronunciation after my English lesson.",
-  "The teacher noticed that my confidence is improving.",
-  "I want to speak clearly during real conversations.",
+  {
+    text: "I thought the world was comfortable enough for a short conversation.",
+    meaning: "A natural sentence for saying something felt easy or acceptable in the past.",
+    form: "Past verb + adjective phrase + enough for + noun phrase.",
+    tip: "Contrast thought, world, and comfortable. Finish the final consonants clearly.",
+  },
+  {
+    text: "Could you repeat the question before I answer?",
+    meaning: "A polite request to hear something again before responding.",
+    form: "Could you + base verb + object + before + subject + verb.",
+    tip: "Keep could you linked together and make question rise slightly at the end.",
+  },
+  {
+    text: "I usually practice pronunciation after my English lesson.",
+    meaning: "A routine sentence about study habits after class.",
+    form: "Subject + frequency adverb + base verb + object + time phrase.",
+    tip: "Stress usually, practice, pronunciation, and lesson. Keep after short.",
+  },
+  {
+    text: "The teacher noticed that my confidence is improving.",
+    meaning: "A way to say someone observed progress over time.",
+    form: "Subject + past verb + that-clause with present continuous.",
+    tip: "Make noticed two syllables and keep confidence clear: CON-fi-dence.",
+  },
+  {
+    text: "I want to speak clearly during real conversations.",
+    meaning: "A direct sentence for expressing a speaking goal.",
+    form: "Subject + want to + base verb + adverb + during + noun phrase.",
+    tip: "Link want to naturally, then stress speak clearly and real conversations.",
+  },
 ];
 
 function readStoredStudentProfile() {
@@ -266,6 +294,10 @@ function setRoute(routeName) {
   if (safeRoute === "account") {
     fillAccountForm();
   }
+
+  if (safeRoute === "dashboard") {
+    prefillPlacementForm();
+  }
 }
 
 function navigateTo(routeName) {
@@ -348,7 +380,10 @@ async function apiRequest(path, options = {}) {
     },
     ...options,
   });
-  const payload = await response.json();
+  const contentType = response.headers.get("Content-Type") || "";
+  const payload = contentType.includes("application/json")
+    ? await response.json()
+    : { error: await response.text() };
 
   if (!response.ok) {
     throw new Error(payload.error || "Request failed.");
@@ -469,6 +504,16 @@ function refreshSessionCopy() {
   renderProgressMetrics();
 }
 
+function prefillPlacementForm() {
+  if (!placementForm || state.placement) {
+    return;
+  }
+
+  const profile = state.studentProfile || {};
+  setSelectValue(placementForm.elements.level, profile.level || "");
+  setSelectValue(placementForm.elements.goal, profile.goal || "");
+}
+
 function buildAddress(formData) {
   return {
     line1: formData.get("addressLine1")?.toString().trim() || "",
@@ -556,11 +601,7 @@ function applyLocalAccountUpdate(data) {
 }
 
 function shouldUseLocalFallback(error) {
-  return (
-    error instanceof SyntaxError ||
-    error.message.includes("Unexpected token") ||
-    error.message.includes("Failed to fetch")
-  );
+  return window.location.protocol === "file:";
 }
 
 async function signOut() {
@@ -642,10 +683,29 @@ async function renderAdminSummary() {
     const summary = await apiRequest("/api/admin/summary");
     updateAdminSummary(summary);
   } catch (error) {
+    if (!shouldUseLocalFallback(error)) {
+      updateAdminError(error);
+      return;
+    }
+
     updateAdminSummary(getLocalAdminSummary());
   }
 
   await renderAdminResources();
+}
+
+function updateAdminError(error) {
+  adminStudentsCount.textContent = "-";
+  adminTeachersCount.textContent = "-";
+  adminAdminsCount.textContent = "-";
+  adminRevenue.textContent = "-";
+  adminPendingPayments.textContent = "-";
+  adminActiveStudents.textContent = "-";
+  adminStorageBadge.textContent = "API error";
+  adminPersistenceNote.textContent = `Could not load admin data from the backend: ${error.message}`;
+  adminProgressRows.innerHTML = `<tr><td colspan="6">Backend admin data is unavailable. Sign in again or check the server connection.</td></tr>`;
+  adminActivityList.innerHTML = "<li>Admin API request failed.</li>";
+  updateAdminResources({ students: [], teachers: [], plans: [], courses: [] });
 }
 
 function updateAdminSummary(summary) {
@@ -721,7 +781,9 @@ async function renderAdminResources() {
     const resources = await apiRequest("/api/admin/resources");
     updateAdminResources(resources);
   } catch (error) {
-    updateAdminResources(getLocalAdminResources());
+    if (shouldUseLocalFallback(error)) {
+      updateAdminResources(getLocalAdminResources());
+    }
   }
 }
 
@@ -886,11 +948,18 @@ async function saveAdminRecord(form, type, feedbackElement) {
   }
 }
 
+function renderPracticePhrase(phrase) {
+  practicePhrase.textContent = phrase.text;
+  phraseMeaning.textContent = phrase.meaning;
+  phraseForm.textContent = phrase.form;
+  phraseTip.textContent = phrase.tip;
+}
+
 function choosePhrase() {
   const currentPhrase = practicePhrase.textContent.trim();
-  const available = phrases.filter((phrase) => phrase !== currentPhrase);
+  const available = phrases.filter((phrase) => phrase.text !== currentPhrase);
   const next = available[Math.floor(Math.random() * available.length)];
-  practicePhrase.textContent = next;
+  renderPracticePhrase(next);
   voiceFeedback.textContent = "New phrase ready. Record your attempt whenever you want.";
 }
 
@@ -907,16 +976,40 @@ async function recordVoiceSample() {
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
+    state.chunks = [];
+
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) {
+        state.chunks.push(event.data);
+      }
+    });
 
     recorder.start();
     window.setTimeout(() => recorder.stop(), 5000);
 
-    recorder.addEventListener("stop", () => {
+    recorder.addEventListener("stop", async () => {
       stream.getTracks().forEach((track) => track.stop());
       recordVoiceButton.disabled = false;
       recordVoiceButton.textContent = "Record voice";
-      voiceFeedback.textContent =
-        "Demo feedback: strong speaking energy. Next drill: stretch the sound in 'world' and finish the ending of 'thought' more clearly.";
+      const blob = new Blob(state.chunks, { type: "audio/webm" });
+      const durationSeconds = 5;
+      state.chunks = [];
+
+      try {
+        const attempt = await apiRequest("/api/pronunciation-attempts", {
+          method: "POST",
+          body: JSON.stringify({
+            phrase: practicePhrase.textContent.trim(),
+            durationSeconds,
+            localSizeBytes: blob.size,
+          }),
+        });
+        voiceFeedback.textContent = `Attempt saved as ${attempt.id}. Audio stays in this browser until upload storage is added; transcription is pending.`;
+      } catch (error) {
+        voiceFeedback.textContent = shouldUseLocalFallback(error)
+          ? "Demo feedback: audio stayed only in this browser. Backend storage is needed to create an attempt ID and transcription job."
+          : `The audio was recorded locally, but the attempt was not saved: ${error.message}`;
+      }
     });
   } catch (error) {
     recordVoiceButton.disabled = false;
@@ -1015,7 +1108,6 @@ document.addEventListener("click", (event) => {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
-  const fallbackName = formData.get("name")?.toString().trim() || "Student";
   const email = formData.get("email")?.toString().trim() || "";
   const password = formData.get("password")?.toString() || "";
 
@@ -1031,7 +1123,7 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    state.userName = fallbackName;
+    state.userName = readStoredStudentProfile()?.fullName?.split(" ")[0] || "Student";
     state.userEmail = email;
     state.userPhone = "";
     state.userRole = email === "admin@example.com" ? "admin" : "student";
@@ -1208,5 +1300,6 @@ stopClassButton.addEventListener("click", stopClassRecording);
 
 renderCourses();
 renderLessons();
+renderPracticePhrase(phrases[0]);
 refreshSessionCopy();
 handleRouteChange();

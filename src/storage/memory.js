@@ -85,6 +85,7 @@ function createDemoState() {
         updatedAt: nowIso(),
       },
     ],
+    pronunciationAttempts: [],
     payments: [{ userId: studentId, status: "paid", amountCents: 5900, paidAt: nowIso() }],
     plans: [
       {
@@ -272,6 +273,23 @@ class MemoryStorage {
         "Consent workflow pending backend storage",
       ],
     };
+  }
+
+  async createPronunciationAttempt(studentId, data) {
+    const attempt = {
+      id: createId("attempt"),
+      studentId,
+      phrase: data.phrase,
+      durationSeconds: data.durationSeconds || 0,
+      localSizeBytes: data.localSizeBytes || 0,
+      audioStorageUrl: "",
+      transcript: "",
+      processingStatus: "recorded_locally",
+      createdAt: nowIso(),
+    };
+
+    this.state.pronunciationAttempts.push(attempt);
+    return attempt;
   }
 
   async getAdminResources() {

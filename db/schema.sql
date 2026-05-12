@@ -118,6 +118,18 @@ create table if not exists lesson_progress (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists pronunciation_attempts (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references users(id) on delete cascade,
+  phrase text not null,
+  duration_seconds integer,
+  local_size_bytes integer,
+  audio_storage_url text,
+  transcript text,
+  processing_status text not null default 'recorded_locally',
+  created_at timestamptz not null default now()
+);
+
 create table if not exists consent_records (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references users(id) on delete cascade,

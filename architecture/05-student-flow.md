@@ -30,8 +30,8 @@ The current prototype uses backend auth when served through Node and keeps a loc
 ```text
 Student Dashboard
   -> AI Teacher greeting
-  -> first assessment questionnaire
-  -> speaking or writing sample
+  -> placement baseline confirmation
+  -> read-out-loud pronunciation practice
   -> recommended lesson
   -> lessons page
   -> account settings
@@ -46,12 +46,17 @@ Account
   -> persist through authenticated backend routes
 ```
 
-## Initial Assessment Goals
+## Placement Baseline Goals
 
-The first assessment should help determine:
+The signup profile captures the first student context. The dashboard baseline step should confirm or adjust:
 
 - Current English level.
 - Learning goal.
+- Optional extra writing context.
+- First estimated baseline for fluency, listening, and pronunciation.
+
+Future deeper assessment should also measure:
+
 - Speaking confidence.
 - Writing ability.
 - Vocabulary range.

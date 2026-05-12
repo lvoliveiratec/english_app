@@ -37,6 +37,7 @@ The AI Teacher Agent helps each student improve English through daily guided pra
 - Current learning path: course, unit, lesson, activity, objective.
 - Recent performance: mistakes, scores, completed lessons, known vocabulary.
 - Speech data: transcript, pronunciation metrics, timing, confidence, repeated words.
+- Pronunciation attempt metadata: target phrase, attempt ID, timestamp, processing status, and derived transcript/metrics when available.
 - Writing data: student text, task prompt, target level, rubric.
 - Authorized KB context: curriculum, grammar guide, pronunciation guide, correction policy.
 
@@ -79,6 +80,13 @@ Speech feedback should focus on:
 - Fluency and hesitation.
 
 The agent should not shame accents. The goal is clear communication, not accent removal.
+
+Current product state:
+
+- The read-out-loud practice shows the phrase meaning, form, and pronunciation focus before recording.
+- Recording creates a pronunciation attempt record tied to the student and phrase.
+- Raw audio is still local to the browser until upload storage, consent, retention, and transcription workers are implemented.
+- The AI Teacher should not treat `recorded_locally` attempts as measured pronunciation scores.
 
 ## Writing Feedback
 

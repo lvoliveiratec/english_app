@@ -47,7 +47,7 @@ Purpose:
 - Hide student-only pages until the student is signed in.
 - Show `Logout` after sign in.
 - Use backend auth endpoints when the app is served through Node.
-- Keep local fallback behavior when opened as a static file.
+- Keep local fallback behavior only when opened directly as a static file.
 - Future versions will include real authentication and identity validation.
 
 ### Create Account
@@ -82,23 +82,32 @@ Purpose:
 - Give the student the first post-login experience.
 - Show progress, daily focus, and the first AI Teacher message.
 - Use saved student profile details to personalize the first AI Teacher summary.
-- Include the initial placement questionnaire.
+- Include placement baseline confirmation based on the signup profile.
 - Allow recording for pronunciation and class media demos.
 
 Progress behavior:
 
 - A new account starts with `Not assessed` for fluency, listening, and pronunciation.
-- Completing the placement creates an initial baseline estimate from the declared level and goal.
+- Confirming the placement baseline creates an initial estimate from the profile level and goal.
 - The baseline is not a real measured score.
 - Real scores should later come from lessons, speaking attempts, listening checks, writing checks, and teacher/AI feedback.
 
-### Initial Assessment
+### Placement Baseline
 
 Purpose:
 
-- Help the AI Teacher understand the student's starting point.
-- Capture current level, main goal, and a writing sample.
+- Let the student confirm or adjust the starting point already captured during signup.
+- Use current level, main goal, and optional extra writing context to create an initial baseline.
 - Future versions should also include speaking, vocabulary, listening, and reading checks.
+
+### Pronunciation Practice
+
+Purpose:
+
+- Show a read-out-loud phrase with meaning, form, and pronunciation focus.
+- Record a short local audio attempt.
+- Create a backend pronunciation attempt record with student ID, phrase, timestamp, size estimate, and processing status.
+- Keep raw audio in the browser until authorized upload storage, consent, retention, and transcription are implemented.
 
 ### Lessons
 

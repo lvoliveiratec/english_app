@@ -67,14 +67,23 @@ This document records what we are building and why each step was taken.
 - Added an authenticated Account page where users can update name, email, phone, address, and password.
 - Added Account API routes for profile updates and password changes.
 - Expanded Playwright coverage for signup address data and account settings.
+- Removed hardcoded demo values from the login form so a new device does not look pre-authenticated.
+- Limited silent local browser fallback to direct static-file previews; HTTP/HTTPS sessions now show backend errors instead of pretending data was saved locally.
+- Reframed the dashboard assessment as a placement baseline confirmation because signup already captures the first student profile.
+- Added meaning, form, and pronunciation focus notes to the read-out-loud practice phrase.
+- Added a `pronunciation_attempts` table and `POST /api/pronunciation-attempts` so recorded practice can create an attempt ID tied to the student, phrase, timestamp, and processing status.
+- Reviewed and updated `architecture/06-diagrams.md` to reflect the current backend modules, admin flow, Account flow, PostgreSQL schema, pronunciation-attempt metadata, and future media/RAG pipeline.
+- Updated backend, RAG, AI Teacher, agent role, and pronunciation agent documentation to match the current implementation.
 
 ## Important Decisions
 
-- The current prototype does not send audio or video to any server.
+- The current prototype does not upload raw audio or video to any server.
+- Pronunciation recording now creates backend metadata when the API is available, but the raw audio still stays in the browser until authorized upload storage is implemented.
 - Recordings need clear consent from both student and teacher.
 - Before using real AI with audio/video, the app needs a backend, authentication, privacy policies, and retention/deletion rules.
 - Student-specific AI memory must be permissioned and isolated per student.
 - Raw media should be treated as sensitive data; AI should prefer derived artifacts such as transcripts, summaries, and pronunciation metrics when possible.
+- Raw audio should not be embedded directly into RAG. Store raw media in object storage, store transcripts/derived metrics in the database, and index only permissioned text/summary artifacts.
 - Passwords must never be stored directly in frontend storage or plain database fields.
 - The local student profile is a prototype data shape, not a production storage model.
 - User address and contact changes belong behind authenticated account routes, not public profile-only storage.

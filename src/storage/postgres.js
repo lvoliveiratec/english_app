@@ -274,6 +274,27 @@ class PostgresStorage {
     };
   }
 
+  async createPronunciationAttempt(studentId, data) {
+    const result = await this.pool.query(
+      `
+        insert into pronunciation_attempts (
+          student_id, phrase, duration_seconds, local_size_bytes, processing_status
+        )
+        values ($1, $2, $3, $4, 'recorded_locally')
+        returning id, student_id, phrase, duration_seconds, local_size_bytes,
+          audio_storage_url, transcript, processing_status, created_at
+      `,
+      [
+        studentId,
+        data.phrase,
+        data.durationSeconds || 0,
+        data.localSizeBytes || 0,
+      ],
+    );
+
+    return this.mapPronunciationAttempt(result.rows[0]);
+  }
+
   async getAdminResources() {
     const [students, teachers, plans, courses] = await Promise.all([
       this.pool.query(
@@ -636,6 +657,20 @@ class PostgresStorage {
       duration: course.duration || "",
       description: course.description || "",
       status: course.status,
+    };
+  }
+
+  mapPronunciationAttempt(attempt) {
+    return {
+      id: attempt.id,
+      studentId: attempt.student_id,
+      phrase: attempt.phrase,
+      durationSeconds: attempt.duration_seconds || 0,
+      localSizeBytes: attempt.local_size_bytes || 0,
+      audioStorageUrl: attempt.audio_storage_url || "",
+      transcript: attempt.transcript || "",
+      processingStatus: attempt.processing_status,
+      createdAt: attempt.created_at,
     };
   }
 

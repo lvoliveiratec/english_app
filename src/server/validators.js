@@ -47,6 +47,14 @@ function normalizePasswordChange(body = {}) {
   };
 }
 
+function normalizePronunciationAttempt(body = {}) {
+  return {
+    phrase: body.phrase?.toString().trim() || "",
+    durationSeconds: Math.max(0, Math.round(Number(body.durationSeconds) || 0)),
+    localSizeBytes: Math.max(0, Math.round(Number(body.localSizeBytes) || 0)),
+  };
+}
+
 function normalizeAdminStudent(body = {}) {
   return {
     fullName: body.fullName?.toString().trim() || "Student",
@@ -97,5 +105,6 @@ module.exports = {
   normalizeAccount,
   normalizeAddress,
   normalizePasswordChange,
+  normalizePronunciationAttempt,
   normalizeStudentProfile,
 };

@@ -5,9 +5,9 @@
 - Improve public pages.
 - Add course detail pages.
 - Add student dashboard.
-- Add first assessment.
+- Add signup profile capture and placement baseline confirmation.
 - Add lessons page.
-- Add demo signup, login, logout, and local student profile storage.
+- Add signup, login, logout, and local static-preview fallback state.
 - Add Playwright smoke tests for core flows.
 - Add initial backend API with PostgreSQL schema and memory fallback.
 - Add first admin dashboard prototype.
@@ -35,6 +35,7 @@
 - Add API contracts for frontend.
 - Connect signup, login, logout, current profile, account update, and password update to the backend.
 - Add admin summary API and administrative dashboard.
+- Add account settings APIs and pronunciation attempt metadata.
 - Keep media upload out of the first backend milestone until auth and consent are in place.
 
 ## Phase 4: AI Teacher MVP

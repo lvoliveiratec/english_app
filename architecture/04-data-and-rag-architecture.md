@@ -13,6 +13,7 @@ Core entity groups:
 - Progress: practice sessions, session turns, assessments, skill snapshots.
 - Teaching: teachers, cohorts, assignments, teacher notes.
 - Media: media assets, derivatives, transcripts, pronunciation metrics.
+- Pronunciation attempts: student, phrase, duration, local size estimate, object-storage URL when available, transcript, processing status, and timestamp.
 - AI memory: student mistakes, summaries, review schedules, recommendations.
 - Business: prices, plans, subscriptions, payments.
 - Governance: consent records, retention records, audit events, deletion requests.
@@ -33,6 +34,13 @@ Object storage should hold:
 - Temporary exports.
 
 The database stores metadata, permissions, consent, and processing state.
+
+Current prototype behavior:
+
+- A pronunciation attempt creates database metadata through `POST /api/pronunciation-attempts`.
+- The raw audio is not uploaded yet.
+- The attempt starts with `processing_status = recorded_locally`.
+- Future upload processing should attach `audio_storage_url`, then transcript and pronunciation metrics.
 
 ## Knowledge Bases
 
@@ -66,6 +74,8 @@ The AI Teacher should not directly query raw stores. The backend/RAG layer shoul
 - Due review items.
 - Authorized teacher notes.
 - Speech or writing analysis output.
+
+Raw media should not be inserted into RAG. The RAG layer should use permissioned transcripts, summaries, pronunciation metrics, recurring-error records, and teacher-approved notes. Raw audio/video belongs in object storage with retention and deletion controls.
 
 ## Student Memory
 
