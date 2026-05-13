@@ -20,8 +20,17 @@ const lessonGrid = document.querySelector("#lessonGrid");
 const studentNavLinks = [...document.querySelectorAll("[data-student-nav]")];
 const homeCoachGreeting = document.querySelector("#homeCoachGreeting");
 const homeCoachSummary = document.querySelector("#homeCoachSummary");
-const placementForm = document.querySelector("#placementForm");
 const assessmentFeedback = document.querySelector("#assessmentFeedback");
+const placementResult = document.querySelector("#placementResult");
+const placementEmpty = document.querySelector("#placementEmpty");
+const placementTestSection = document.querySelector("#placementTestSection");
+const placementTestStatus = document.querySelector("#placementTestStatus");
+const placementTestForm = document.querySelector("#placementTestForm");
+const placementQuestions = document.querySelector("#placementQuestions");
+const placementTestError = document.querySelector("#placementTestError");
+const placementPriorities = document.querySelector("#placementPriorities");
+const startPlacementButton = document.querySelector("#startPlacementButton");
+const retakePlacementButton = document.querySelector("#retakePlacementButton");
 const courseDetailLevel = document.querySelector("#courseDetailLevel");
 const courseDetailTitle = document.querySelector("#courseDetailTitle");
 const courseDetailDescription = document.querySelector("#courseDetailDescription");
@@ -64,6 +73,13 @@ const teacherActionList = document.querySelector("#teacherActionList");
 const teacherInviteLink = document.querySelector("#teacherInviteLink");
 const copyTeacherInviteButton = document.querySelector("#copyTeacherInviteButton");
 const teacherInviteFeedback = document.querySelector("#teacherInviteFeedback");
+const levelSuggestionsPanel = document.querySelector("#levelSuggestionsPanel");
+const levelSuggestionRows = document.querySelector("#levelSuggestionRows");
+const levelSuggestionFeedback = document.querySelector("#levelSuggestionFeedback");
+const placementHeading = document.querySelector("#placementHeading");
+const adminLevelSuggestionsPanel = document.querySelector("#adminLevelSuggestionsPanel");
+const adminLevelSuggestionRows = document.querySelector("#adminLevelSuggestionRows");
+const adminLevelSuggestionFeedback = document.querySelector("#adminLevelSuggestionFeedback");
 const adminStudentsCount = document.querySelector("#adminStudentsCount");
 const adminTeachersCount = document.querySelector("#adminTeachersCount");
 const adminAdminsCount = document.querySelector("#adminAdminsCount");
@@ -374,7 +390,7 @@ function setRoute(routeName) {
   }
 
   if (safeRoute === "dashboard") {
-    prefillPlacementForm();
+    updatePlacementUI();
   }
 }
 
@@ -532,6 +548,20 @@ function buildTeacherInviteUrl(code) {
   return url.toString();
 }
 
+async function fetchAndApplyPlacement() {
+  try {
+    const result = await apiRequest("/api/placement");
+    if (result) {
+      state.placement = { ...result, goal: state.studentProfile?.goal || "" };
+      localStorage.setItem("fluentpath:placement", JSON.stringify(state.placement));
+      renderProgressMetrics();
+      updatePlacementUI();
+    }
+  } catch {
+    // placement fetch is best-effort — localStorage cache is already applied
+  }
+}
+
 function applySessionPayload(payload) {
   const user = payload.user || {};
   const profile = payload.profile
@@ -656,14 +686,23 @@ function refreshSessionCopy() {
   renderProgressMetrics();
 }
 
-function prefillPlacementForm() {
-  if (!placementForm || state.placement) {
-    return;
+function updatePlacementUI() {
+  const placement = state.placement;
+  if (placement) {
+    placementHeading.textContent = `AI baseline — ${placement.level}`;
+    assessmentFeedback.textContent = placement.feedback || "";
+    placementPriorities.innerHTML = (placement.priorities || [])
+      .map((p) => `<li>${escapeHtml(p)}</li>`)
+      .join("");
+    placementResult.hidden = false;
+    placementEmpty.hidden = true;
+    placementTestSection.hidden = true;
+  } else {
+    placementHeading.textContent = "AI baseline";
+    placementResult.hidden = true;
+    placementEmpty.hidden = false;
+    placementTestSection.hidden = true;
   }
-
-  const profile = state.studentProfile || {};
-  setSelectValue(placementForm.elements.level, profile.level || "");
-  setSelectValue(placementForm.elements.goal, profile.goal || "");
 }
 
 function buildAddress(formData) {
@@ -935,6 +974,21 @@ function updateTeacherSummary(summary) {
   teacherActionList.innerHTML = summary.nextActions
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
+
+  const suggestions = summary.levelSuggestions || [];
+  levelSuggestionsPanel.hidden = suggestions.length === 0;
+  levelSuggestionRows.innerHTML = suggestions
+    .map(
+      (s) => `
+        <tr>
+          <td>${escapeHtml(s.studentName)}</td>
+          <td>${escapeHtml(s.currentLevel)}</td>
+          <td>${escapeHtml(s.suggestedLevel)}</td>
+          <td><button class="secondary-action" data-review-student="${escapeHtml(s.studentId)}" data-review-action="approve">Approve</button></td>
+          <td><button class="secondary-action" data-review-student="${escapeHtml(s.studentId)}" data-review-action="dismiss">Dismiss</button></td>
+        </tr>`,
+    )
+    .join("");
 }
 
 function getLocalAdminSummary() {
@@ -1040,6 +1094,21 @@ function updateAdminSummary(summary) {
 
   adminActivityList.innerHTML = summary.recentActivity
     .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+
+  const adminSuggestions = summary.pendingLevelSuggestions || [];
+  adminLevelSuggestionsPanel.hidden = adminSuggestions.length === 0;
+  adminLevelSuggestionRows.innerHTML = adminSuggestions
+    .map(
+      (s) => `
+        <tr>
+          <td>${escapeHtml(s.studentName)}</td>
+          <td>${escapeHtml(s.currentLevel)}</td>
+          <td>${escapeHtml(s.suggestedLevel)}</td>
+          <td><button class="secondary-action" data-admin-review-student="${escapeHtml(s.studentId)}" data-admin-review-action="approve">Approve</button></td>
+          <td><button class="secondary-action" data-admin-review-student="${escapeHtml(s.studentId)}" data-admin-review-action="dismiss">Dismiss</button></td>
+        </tr>`,
+    )
     .join("");
 }
 
@@ -1509,9 +1578,11 @@ loginForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({ email, password }),
     });
     applySessionPayload(payload);
+    if (payload.user?.role === "student") fetchAndApplyPlacement();
   } catch (error) {
     if (!shouldUseLocalFallback(error)) {
       loginFeedback.textContent = error.message;
+      loginFeedback.classList.add("error");
       return;
     }
 
@@ -1545,6 +1616,7 @@ loginForm.addEventListener("submit", async (event) => {
   }
 
   loginFeedback.textContent = "Signed in.";
+  loginFeedback.classList.remove("error");
   refreshSessionCopy();
   navigateTo(getDefaultRouteForRole());
 });
@@ -1570,6 +1642,7 @@ signupForm.addEventListener("submit", async (event) => {
   } catch (error) {
     if (!shouldUseLocalFallback(error)) {
       signupFeedback.textContent = error.message;
+      signupFeedback.classList.add("error");
       return;
     }
 
@@ -1599,11 +1672,23 @@ signupForm.addEventListener("submit", async (event) => {
   localStorage.removeItem("fluentpath:placement");
   sessionStorage.removeItem("fluentpath:inviteCode");
 
-  signupFeedback.textContent = inviteCode
+  const baseSignupMessage = inviteCode
     ? "Student profile saved and assigned to the teacher from the invite link."
-    : "Student profile saved. The AI Teacher can now use these details to personalize the first lesson.";
+    : "Student profile saved.";
+  signupFeedback.textContent = `${baseSignupMessage} Setting up your AI baseline…`;
   refreshSessionCopy();
   navigateTo("dashboard");
+
+  try {
+    const result = await apiRequest("/api/placement", {
+      method: "POST",
+      body: JSON.stringify({ writing: profile.motivation || "" }),
+    });
+    applyPlacementResult(result);
+    signupFeedback.textContent = `${baseSignupMessage} AI baseline ready.`;
+  } catch {
+    signupFeedback.textContent = baseSignupMessage;
+  }
 });
 
 courseGrid.addEventListener("click", (event) => {
@@ -1618,24 +1703,88 @@ courseGrid.addEventListener("click", (event) => {
   navigateTo("course");
 });
 
-placementForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const formData = new FormData(placementForm);
-  const level = formData.get("level");
-  const goal = formData.get("goal");
-  const placement = {
-    level,
-    goal,
-    writing: formData.get("writing")?.toString().trim() || "",
-    metrics: getBaselineMetrics(level, goal),
-    completedAt: new Date().toISOString(),
-  };
+function renderPlacementQuestion(q) {
+  const skillLabel = { grammar: "Grammar", vocabulary: "Vocabulary", reading: "Reading", listening: "Listening" };
+  const passage = q.passage
+    ? `<div class="assessment-passage">${escapeHtml(q.passage)}</div>`
+    : "";
 
-  state.placement = placement;
-  localStorage.setItem("fluentpath:placement", JSON.stringify(placement));
+  let input;
+  if (q.type === "multiple_choice" && Array.isArray(q.options)) {
+    input = q.options
+      .map(
+        (opt) =>
+          `<label class="radio-option"><input type="radio" name="${escapeHtml(q.id)}" value="${escapeHtml(opt)}"> ${escapeHtml(opt)}</label>`,
+      )
+      .join("");
+  } else {
+    input = `<input class="assessment-text-input" type="text" name="${escapeHtml(q.id)}" placeholder="Your answer" autocomplete="off">`;
+  }
+
+  return `<div class="assessment-question">
+    <span class="question-skill">${escapeHtml(skillLabel[q.skill] || q.skill)}</span>
+    ${passage}
+    <p class="question-prompt">${escapeHtml(q.prompt)}</p>
+    ${input}
+  </div>`;
+}
+
+function applyPlacementResult(result) {
+  state.placement = { ...result, goal: state.studentProfile?.goal || "" };
+  localStorage.setItem("fluentpath:placement", JSON.stringify(state.placement));
   renderProgressMetrics();
+  updatePlacementUI();
+}
 
-  assessmentFeedback.textContent = `Saved. Your AI Teacher will start with ${level} material focused on ${goal.toString().toLowerCase()}. The dashboard now shows an initial baseline estimate, not a measured score yet.`;
+async function startPlacementTest() {
+  placementEmpty.hidden = true;
+  placementResult.hidden = true;
+  placementTestSection.hidden = false;
+  placementTestForm.hidden = true;
+  placementTestStatus.textContent = "Generating your test…";
+  placementTestError.hidden = true;
+
+  try {
+    const { questions } = await apiRequest("/api/placement/questions");
+    state.placementQuestions = questions;
+    placementQuestions.innerHTML = questions.map(renderPlacementQuestion).join("");
+    placementTestStatus.textContent = `${questions.length} questions — answer all and click Submit.`;
+    placementTestForm.hidden = false;
+  } catch (error) {
+    placementTestStatus.textContent = "Could not load the test. Try again.";
+    placementEmpty.hidden = false;
+  }
+}
+
+startPlacementButton.addEventListener("click", startPlacementTest);
+retakePlacementButton.addEventListener("click", startPlacementTest);
+
+placementTestForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  placementTestError.hidden = true;
+
+  const formData = new FormData(placementTestForm);
+  const answers = {};
+  for (const [key, value] of formData.entries()) {
+    answers[key] = value.toString().trim();
+  }
+
+  const submitButton = placementTestForm.querySelector("[type='submit']");
+  submitButton.disabled = true;
+  submitButton.textContent = "Evaluating…";
+
+  try {
+    const result = await apiRequest("/api/placement", {
+      method: "POST",
+      body: JSON.stringify({ questions: state.placementQuestions, answers }),
+    });
+    applyPlacementResult(result);
+  } catch (error) {
+    placementTestError.textContent = error.message || "Could not evaluate the test. Try again.";
+    placementTestError.hidden = false;
+    submitButton.disabled = false;
+    submitButton.textContent = "Submit answers";
+  }
 });
 
 accountForm.addEventListener("submit", async (event) => {
@@ -1714,6 +1863,42 @@ recordVoiceButton.addEventListener("click", recordVoiceSample);
 audioClassButton.addEventListener("click", () => startClassRecording("audio"));
 videoClassButton.addEventListener("click", () => startClassRecording("video"));
 stopClassButton.addEventListener("click", stopClassRecording);
+
+adminLevelSuggestionRows.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-review-student]");
+  if (!button) return;
+  const studentId = button.dataset.adminReviewStudent;
+  const action = button.dataset.adminReviewAction;
+  try {
+    await apiRequest(`/api/admin/level-suggestions/${encodeURIComponent(studentId)}/${action}`, {
+      method: "POST",
+      body: "{}",
+    });
+    adminLevelSuggestionFeedback.textContent =
+      action === "approve" ? "Level updated." : "Suggestion dismissed.";
+    renderAdminSummary();
+  } catch (error) {
+    adminLevelSuggestionFeedback.textContent = error.message;
+  }
+});
+
+levelSuggestionRows.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-review-student]");
+  if (!button) return;
+  const studentId = button.dataset.reviewStudent;
+  const action = button.dataset.reviewAction;
+  try {
+    await apiRequest(`/api/teacher/level-suggestions/${encodeURIComponent(studentId)}/${action}`, {
+      method: "POST",
+      body: "{}",
+    });
+    levelSuggestionFeedback.textContent =
+      action === "approve" ? "Level updated." : "Suggestion dismissed.";
+    renderTeacherSummary();
+  } catch (error) {
+    levelSuggestionFeedback.textContent = error.message;
+  }
+});
 
 renderCourses();
 renderLessons();

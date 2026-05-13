@@ -116,6 +116,21 @@ async function handleAdminRoutes({ request, response, parsedUrl, storage }) {
     }
   }
 
+  const reviewMatch = parsedUrl.pathname.match(
+    /^\/api\/admin\/level-suggestions\/([^/]+)\/(approve|dismiss)$/,
+  );
+
+  if (request.method === "POST" && reviewMatch) {
+    if (!(await requireAdmin(request, response, storage))) {
+      return true;
+    }
+
+    const [, studentId, action] = reviewMatch;
+    await storage.reviewLevelSuggestion(studentId, action);
+    sendJson(response, 200, { ok: true });
+    return true;
+  }
+
   return false;
 }
 

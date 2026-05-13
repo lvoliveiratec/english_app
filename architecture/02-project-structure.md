@@ -1,149 +1,109 @@
 # Project Structure
 
-## Current Prototype Structure
+## Current Structure
 
 ```text
 english_app/
-  agents/
-    ai-coach.md
-    ai-teacher.md
-    placement-agent.md
-    pronunciation-agent.md
-    teacher-summary-agent.md
-  architecture/
-    README.md
-    01-system-overview.md
-    02-project-structure.md
-    03-agent-architecture.md
-    04-data-and-rag-architecture.md
-    05-student-flow.md
-    06-diagrams.md
-    07-implementation-roadmap.md
-  docs/
-    000-process-log.md
-    001-product-vision.md
-    002-technical-roadmap.md
-    003-agent-roles.md
-    004-mcp-kb-research.md
-    005-rag-and-data-architecture.md
-    006-ai-teacher-agent.md
-    007-page-and-student-flow.md
-    008-backend-foundation-plan.md
+  src/
+    agents/
+      placement.js           ← Claude API: generates questions + evaluates placement
+    server/
+      auth.js                ← getSession / getAdminSession / getTeacherSession
+      cookies.js             ← session cookie helpers
+      http.js                ← readRequestBody / sendJson
+      static.js              ← static file serving
+      validators.js          ← normalizeXxx input sanitizers
+      routes/
+        index.js             ← routes dispatcher
+        auth.js              ← signup, login, logout, me, invites
+        account.js           ← GET/PUT account, PUT password
+        placement.js         ← GET placement, GET questions, POST placement
+        pronunciation.js     ← POST pronunciation-attempts
+        teacher.js           ← GET summary, POST level-suggestion review
+        admin.js             ← admin CRUD + POST level-suggestion review
+    storage/
+      index.js               ← createStorage() factory
+      postgres.js            ← PostgresStorage (all DB queries)
+      memory.js              ← MemoryStorage (in-memory dev fallback)
+    security.js              ← scrypt hashing, timing-safe verify, createToken
+
   db/
-    schema.sql
+    schema.sql               ← full PostgreSQL schema (idempotent)
+
   kb/
     english/
       README.md
-      cefr-level-guide.md
-      correction-policy.md
-      grammar-syllabus.md
-      lesson-patterns.md
-      pronunciation-guide.md
-      speaking-assessment-rubric.md
-      vocabulary-themes.md
-      writing-spelling-guide.md
-  tests/
-    smoke.spec.js
+      cefr-level-guide.md             ← A1–C2 level expectations
+      assessment-grammar.md           ← gap-fill questions by CEFR level
+      assessment-vocabulary.md        ← vocabulary ranges and question formats
+      assessment-reading.md           ← text samples and comprehension questions
+      assessment-listening.md         ← transcript cloze and dialogue methods
+      correction-policy.md            ← how AI Teacher corrects students
+      grammar-syllabus.md             ← grammar topics by level
+      lesson-patterns.md              ← reusable lesson formats
+      pronunciation-guide.md          ← sounds, stress, rhythm
+      speaking-assessment-rubric.md   ← speaking evaluation criteria
+      vocabulary-themes.md            ← vocabulary domains and targets
+      writing-spelling-guide.md       ← spelling, punctuation, writing
+
+  agents/                    ← product AI agent specs (contracts)
+    ai-coach.md
+    ai-teacher.md
+    placement-agent.md       ← implemented in src/agents/placement.js
+    pronunciation-agent.md
+    teacher-summary-agent.md
+
+  architecture/              ← system docs (this folder)
+  docs/                      ← product decisions and historical planning notes
+
   scripts/
-    migrate.js
-    seed.js
-  src/
-    security.js
-    server/
-      auth.js
-      cookies.js
-      http.js
-      static.js
-      validators.js
-      routes/
-        account.js
-        admin.js
-        auth.js
-        index.js
-        pronunciation.js
-        teacher.js
-    storage/
-      index.js
-      memory.js
-      postgres.js
-  AGENTS.md
-  .dockerignore
-  .env.example
+    migrate.js               ← runs db/schema.sql against DATABASE_URL
+    seed.js                  ← inserts demo users and demo data
+
+  tests/
+    smoke.spec.js            ← Playwright E2E (7 tests)
+
+  app.js                     ← all frontend JavaScript (SPA)
+  index.html                 ← single HTML file, hash-routed pages
+  styles.css                 ← all styles
+  server.js                  ← HTTP server entry point
+  AGENTS.md                  ← instructions for AI coding agents
+  .env.example               ← environment variable template
   Dockerfile
-  app.js
-  docker-compose.yml
-  index.html
+  docker-compose.yml         ← local PostgreSQL service
   package.json
-  package-lock.json
   playwright.config.js
-  server.js
-  styles.css
 ```
 
-## Future Application Structure
+## Module Responsibilities
 
-When the prototype becomes a real app, a likely structure is:
+| Path | Responsibility |
+|---|---|
+| `server.js` | Creates HTTP server, calls `createStorage()`, delegates to routes |
+| `app.js` | All frontend logic — routing, API calls, DOM rendering |
+| `src/agents/placement.js` | Claude API calls — question generation and evaluation |
+| `src/server/routes/` | One file per domain. Each exports `handleXxxRoutes({request, response, parsedUrl, storage})` returning `true` if handled |
+| `src/storage/` | `PostgresStorage` and `MemoryStorage` implement the same interface |
+| `src/security.js` | All crypto — never use raw crypto elsewhere |
+| `db/schema.sql` | Single source of truth for DB shape (idempotent) |
+| `kb/english/` | Source knowledge for Claude system prompts |
+| `agents/` | Product-level AI agent specs and contracts |
+
+## Future Structure
+
+When this grows into a real multi-tenant product:
 
 ```text
 english_app/
   apps/
-    web/
-      src/
-        app/
-        components/
-        features/
-        routes/
-        styles/
-        tests/
-    api/
-      src/
-        auth/
-        courses/
-        lessons/
-        students/
-        teachers/
-        media/
-        ai/
-        rag/
-        billing/
-        audit/
-    workers/
-      src/
-        transcription/
-        pronunciation/
-        media-processing/
-        embedding/
+    web/           ← React + TypeScript frontend
+    api/           ← Node.js API (or modular monolith)
+    workers/       ← transcription, pronunciation, embedding pipelines
   packages/
-    shared/
-    database/
-    ai-contracts/
-  architecture/
-  docs/
+    database/      ← schema, migrations
+    ai-contracts/  ← Claude input/output type definitions
   kb/
     english/
     curriculum/
     policies/
 ```
-
-## Ownership Boundaries
-
-- `architecture/`: system shape and diagrams.
-- `agents/`: product AI agent specifications and contracts.
-- `docs/`: project decisions, product notes, roadmap, and process log.
-- `db/`: PostgreSQL schema and migration SQL.
-- `kb/`: source knowledge for AI retrieval.
-- `src/server`: backend HTTP helpers, auth helpers, static serving, validators, and API routes.
-- `src/storage`: backend storage adapters for PostgreSQL and in-memory development data.
-- `src/security.js`: password hashing, token, and ID helpers.
-- `scripts/`: local backend/database utility scripts.
-- `tests/`: Playwright smoke tests for the current prototype.
-- `playwright.config.js`: end-to-end test configuration.
-- `AGENTS.md`: instructions for AI coding agents working in this repository.
-- `Dockerfile`: container runtime for local deployment experiments and Cloud Run style hosting.
-- `docker-compose.yml`: local PostgreSQL service for development.
-- `.env.example`: local environment variable template.
-- `apps/web`: future frontend application.
-- `apps/api`: future backend API.
-- `apps/workers`: future async processing jobs.
-- `packages/database`: future schema and migrations.
-- `packages/ai-contracts`: future AI input/output contracts.

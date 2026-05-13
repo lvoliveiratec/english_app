@@ -58,6 +58,8 @@ create table if not exists teacher_profiles (
 
 alter table teacher_profiles add column if not exists specialty text;
 alter table student_profiles add column if not exists assignment_status text not null default 'pending_assignment';
+alter table student_profiles add column if not exists suggested_level text;
+alter table student_profiles add column if not exists level_review_status text not null default 'none';
 
 create table if not exists admin_profiles (
   user_id uuid primary key references users(id) on delete cascade,

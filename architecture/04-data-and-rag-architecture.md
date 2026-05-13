@@ -45,21 +45,33 @@ Current prototype behavior:
 
 ## Knowledge Bases
 
-Global KBs:
+### Current approach — prompt context
 
-- English KB.
-- Curriculum KB.
-- Platform help KB.
-- Privacy and consent policy KB.
-- Correction style guide.
+KB files are loaded into Claude API system prompts at module startup.
+Prompt caching (`cache_control: { type: "ephemeral" }`) is used to avoid re-sending the same content on every request.
 
-Scoped KBs:
+Files currently loaded in `src/agents/placement.js`:
+- `kb/english/cefr-level-guide.md`
+- `kb/english/assessment-grammar.md`
+- `kb/english/assessment-vocabulary.md`
+- `kb/english/assessment-reading.md`
+- `kb/english/assessment-listening.md`
 
-- Teacher materials.
-- Class materials.
-- Student memory.
-- Session summaries.
-- Student-specific transcripts when consent allows it.
+This works well for small-to-medium KBs. As content grows, chunking and vector retrieval (RAG) become necessary.
+
+### Planned Global KBs
+
+- English KB (CEFR levels, grammar, vocabulary, pronunciation, correction policy)
+- Curriculum KB (lesson content, exercises, unit structure)
+- Platform help KB
+- Correction style guide
+
+### Planned Scoped KBs
+
+- Teacher materials (assignment-scoped)
+- Student memory (isolated per student)
+- Session summaries
+- Student-specific transcripts (consent-gated)
 
 ## RAG Retrieval Rule
 

@@ -261,6 +261,13 @@ class PostgresStorage {
       `,
     );
 
+    const pendingSuggestionsResult = await this.pool.query(
+      `select sp.user_id as student_id, sp.full_name as student_name,
+              sp.level as current_level, sp.suggested_level
+       from student_profiles sp
+       where sp.level_review_status = 'pending' and sp.suggested_level is not null`,
+    );
+
     const totals = totalsResult.rows[0];
     const payments = paymentResult.rows[0];
 
@@ -281,6 +288,12 @@ class PostgresStorage {
         completion: row.completion,
         difficulty: row.difficulty,
         recommendation: row.recommendation,
+      })),
+      pendingLevelSuggestions: pendingSuggestionsResult.rows.map((row) => ({
+        studentId: row.student_id,
+        studentName: row.student_name,
+        currentLevel: row.current_level,
+        suggestedLevel: row.suggested_level,
       })),
       recentActivity: [
         "Backend summary loaded",
@@ -367,6 +380,22 @@ class PostgresStorage {
     }));
     const studentsNeedingAttention = assignedStudents.filter((student) => student.completion < 70);
 
+    const suggestionsResult = await this.pool.query(
+      `select sp.user_id as student_id, sp.full_name as student_name,
+              sp.level as current_level, sp.suggested_level
+       from student_profiles sp
+       join teacher_student_assignments tsa on tsa.student_id = sp.user_id
+       where tsa.teacher_id = $1 and tsa.status = 'active'
+         and sp.level_review_status = 'pending' and sp.suggested_level is not null`,
+      [teacherId],
+    );
+    const levelSuggestions = suggestionsResult.rows.map((row) => ({
+      studentId: row.student_id,
+      studentName: row.student_name,
+      currentLevel: row.current_level,
+      suggestedLevel: row.suggested_level,
+    }));
+
     return {
       storage: this.kind,
       teacher: {
@@ -384,6 +413,7 @@ class PostgresStorage {
         pendingSummaries: studentsNeedingAttention.length,
       },
       assignedStudents,
+      levelSuggestions,
       nextActions: assignedStudents.length
         ? [
             "Review students with completion below 70%.",
@@ -1013,6 +1043,87 @@ class PostgresStorage {
       transcript: attempt.transcript || "",
       processingStatus: attempt.processing_status,
       createdAt: attempt.created_at,
+    };
+  }
+
+  async createLevelSuggestion(studentId, { currentLevel, suggestedLevel, reason }) {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await client.query(
+        `update student_profiles
+         set suggested_level = $1, level_review_status = 'pending', updated_at = now()
+         where user_id = $2`,
+        [suggestedLevel, studentId],
+      );
+      await client.query(
+        `insert into ai_feedback (student_id, source_type, summary, recommendations)
+         values ($1, 'level_suggestion', $2, $3)`,
+        [studentId, reason, [`current:${currentLevel}`, `suggested:${suggestedLevel}`]],
+      );
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async reviewLevelSuggestion(studentId, action) {
+    if (action === "approve") {
+      await this.pool.query(
+        `update student_profiles
+         set level = suggested_level, suggested_level = null, level_review_status = 'approved', updated_at = now()
+         where user_id = $1 and suggested_level is not null`,
+        [studentId],
+      );
+    } else {
+      await this.pool.query(
+        `update student_profiles
+         set suggested_level = null, level_review_status = 'dismissed', updated_at = now()
+         where user_id = $1`,
+        [studentId],
+      );
+    }
+  }
+
+  async savePlacement(studentId, { feedback, level, priorities }) {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await client.query(
+        `insert into ai_feedback (student_id, source_type, summary, recommendations)
+         values ($1, 'placement', $2, $3)`,
+        [studentId, feedback, priorities],
+      );
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getLatestPlacement(studentId) {
+    const result = await this.pool.query(
+      `select af.summary as feedback, af.recommendations as priorities,
+              sp.level, af.created_at
+       from ai_feedback af
+       join student_profiles sp on sp.user_id = $1
+       where af.student_id = $1 and af.source_type = 'placement'
+       order by af.created_at desc
+       limit 1`,
+      [studentId],
+    );
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      feedback: row.feedback,
+      level: row.level,
+      priorities: row.priorities || [],
+      createdAt: row.created_at,
     };
   }
 

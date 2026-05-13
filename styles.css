@@ -610,6 +610,66 @@ input {
   line-height: 1.5;
 }
 
+.form-note.error,
+.feedback-text.error {
+  color: #c0392b;
+  font-weight: 500;
+}
+
+.assessment-question {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1rem;
+  background: #fafbfc;
+}
+
+.question-skill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent, #1a7a56);
+  margin-bottom: 0.6rem;
+}
+
+.assessment-passage {
+  background: #f0f4f8;
+  border-left: 3px solid var(--accent, #1a7a56);
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.question-prompt {
+  font-size: 0.97rem;
+  font-weight: 500;
+  margin: 0 0 0.7rem;
+  line-height: 1.5;
+}
+
+.assessment-text-input {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 7px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
 .invite-banner {
   margin-top: 1.2rem;
   border: 1px solid #bfe7d7;

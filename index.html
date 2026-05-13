@@ -554,47 +554,41 @@
                 <div class="panel-heading">
                   <div>
                     <p class="eyebrow">Placement baseline</p>
-                    <h2>Confirm the starting point from your profile</h2>
+                    <h2 id="placementHeading">AI baseline</h2>
                   </div>
                   <span class="pill">Placement</span>
                 </div>
-                <form class="assessment-form" id="placementForm">
-                  <label>
-                    Profile level
-                    <select name="level" required>
-                      <option value="">Choose one</option>
-                      <option>Beginner</option>
-                      <option>Elementary</option>
-                      <option>Intermediate</option>
-                      <option>Upper Intermediate</option>
-                      <option>Advanced</option>
-                    </select>
-                  </label>
-                  <label>
-                    Profile goal
-                    <select name="goal" required>
-                      <option value="">Choose one</option>
-                      <option>Daily conversation</option>
-                      <option>Work and meetings</option>
-                      <option>Travel</option>
-                      <option>Interviews</option>
-                      <option>Pronunciation</option>
-                    </select>
-                  </label>
-                  <label>
-                    Extra writing sample
-                    <textarea
-                      name="writing"
-                      rows="4"
-                      placeholder="Optional: add a few new sentences if your goal or context changed."
-                    ></textarea>
-                  </label>
-                  <button class="primary-action" type="submit">Create baseline</button>
-                </form>
-                <p class="feedback-text" id="assessmentFeedback">
-                  Your signup profile already gives the AI Teacher context. Use this only to
-                  confirm or adjust the initial baseline.
-                </p>
+
+                <!-- State A: result exists -->
+                <div id="placementResult" hidden>
+                  <p class="feedback-text" id="assessmentFeedback"></p>
+                  <ul class="activity-list" id="placementPriorities"></ul>
+                  <button class="secondary-action" id="retakePlacementButton" style="margin-top:1rem">
+                    Retake test
+                  </button>
+                </div>
+
+                <!-- State B: no result yet -->
+                <div id="placementEmpty">
+                  <p class="feedback-text">
+                    Take a short test so the AI Teacher can start from your actual level.
+                  </p>
+                  <button class="primary-action" id="startPlacementButton" style="margin-top:1rem">
+                    Take placement test
+                  </button>
+                </div>
+
+                <!-- State C: test in progress -->
+                <div id="placementTestSection" hidden>
+                  <p class="feedback-text" id="placementTestStatus">Loading your test…</p>
+                  <form id="placementTestForm" hidden>
+                    <div id="placementQuestions"></div>
+                    <p class="feedback-text error" id="placementTestError" hidden></p>
+                    <button class="primary-action" type="submit" style="margin-top:1.5rem">
+                      Submit answers
+                    </button>
+                  </form>
+                </div>
               </section>
 
               <section class="workspace-panel">
@@ -721,6 +715,31 @@
                     </ul>
                   </section>
                 </div>
+
+                <section class="workspace-panel" id="levelSuggestionsPanel" hidden>
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">AI Level Review</p>
+                      <h2>Suggested level adjustments</h2>
+                    </div>
+                    <span class="pill warning">Action needed</span>
+                  </div>
+                  <div class="admin-table-wrap">
+                    <table class="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Student</th>
+                          <th>Current level</th>
+                          <th>AI suggests</th>
+                          <th>Approve</th>
+                          <th>Dismiss</th>
+                        </tr>
+                      </thead>
+                      <tbody id="levelSuggestionRows"></tbody>
+                    </table>
+                  </div>
+                  <p class="feedback-text" id="levelSuggestionFeedback"></p>
+                </section>
 
                 <section class="workspace-panel teacher-invite-panel">
                   <div class="panel-heading">
@@ -944,6 +963,31 @@
                 </ul>
               </section>
             </div>
+
+            <section class="workspace-panel" id="adminLevelSuggestionsPanel" hidden>
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">AI Level Review</p>
+                  <h2>Suggested level adjustments</h2>
+                </div>
+                <span class="pill warning">Action needed</span>
+              </div>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Current level</th>
+                      <th>AI suggests</th>
+                      <th>Approve</th>
+                      <th>Dismiss</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminLevelSuggestionRows"></tbody>
+                </table>
+              </div>
+              <p class="feedback-text" id="adminLevelSuggestionFeedback"></p>
+            </section>
 
             <section class="workspace-panel admin-assignment-panel">
               <div class="panel-heading">

@@ -1,71 +1,74 @@
 # Implementation Roadmap
 
-## Phase 1: Stronger Prototype
+## Phase 1: Prototype Foundation ✅ Complete
 
-- Improve public pages.
-- Add course detail pages.
-- Add student dashboard.
-- Add signup profile capture and placement baseline confirmation.
-- Add lessons page.
-- Add signup, login, logout, and local static-preview fallback state.
-- Add Playwright smoke tests for core flows.
-- Add initial backend API with PostgreSQL schema and memory fallback.
-- Add first admin dashboard prototype.
-- Add teacher dashboard prototype.
-- Add teacher invite and teacher/student assignment flows.
-- Add local PostgreSQL through Docker Compose.
-- Add account settings for contact, address, and password updates.
-- Keep all copy English-only.
-- Keep documentation updated.
+- Public pages (home, courses, course detail)
+- Signup with full learning profile (level, goal, interests, address, motivation)
+- Login, logout, account settings (profile, address, password)
+- Student, teacher, and admin role-based dashboards
+- Teacher invite links with automatic student assignment
+- Admin management: students, teachers, assignments, plans, courses
+- PostgreSQL backend with in-memory fallback
+- Playwright smoke tests for all major flows
+- Docker Compose for local PostgreSQL
 
-## Phase 2: Frontend App
+## Phase 2: AI Placement and Level Tracking ✅ Complete
 
-- Move from static HTML/CSS/JS to React + TypeScript.
-- Add real routing.
-- Build reusable components.
-- Add authenticated and public layouts.
-- Add lesson player UI.
-- Add dashboard states and onboarding flow.
+- Placement Agent implemented with Claude Haiku
+- 7-question placement test: grammar, vocabulary, reading, listening
+- Test questions generated dynamically per student profile using CEFR assessment KB
+- Auto-placement after signup using motivation text as writing sample
+- Placement results stored in PostgreSQL (`ai_feedback` table), available across all devices
+- Level suggestions: when AI assessment differs from self-reported level, queues for review
+- Teacher dashboard: AI Level Review panel — approve/dismiss per student
+- Admin dashboard: same panel for unassigned students and all students
+- Assessment KB: 4 files covering grammar, vocabulary, reading, and listening with CEFR-aligned content
 
-## Phase 3: Backend Foundation
+## Phase 3: AI Teacher and Lesson Content (next)
 
-- Create backend API.
-- Add authentication.
-- Add Postgres.
-- Add migrations.
-- Add user, session, student profile, teacher profile, admin profile, course, lesson, progress, consent, and media models.
-- Add teacher invite and teacher/student assignment models.
-- Add API contracts for frontend.
-- Connect signup, login, logout, current profile, account update, and password update to the backend.
-- Add admin summary API and administrative dashboard.
-- Add teacher summary API and teacher dashboard.
-- Add admin assignment API and assignment management.
-- Add account settings APIs and pronunciation attempt metadata.
-- Keep media upload out of the first backend milestone until auth and consent are in place.
+- Build lesson content (curriculum) stored in `lessons` table
+- Wire AI Teacher agent to Claude API for lesson feedback, corrections, practice generation
+- Lesson player UI in the frontend
+- AI Teacher uses student placement level, goal, interests, and mistake history as context
+- `lesson_progress` records updated after each lesson activity
 
-## Phase 4: AI Teacher MVP
+## Phase 4: AI Coach Personalization
 
-- Define AI Teacher input/output contract.
-- Connect English KB retrieval.
-- Store compact student learning signals.
-- Generate lesson feedback.
-- Generate writing corrections.
-- Generate pronunciation feedback from transcript/metrics.
+- Wire AI Coach to Claude API
+- Personalized dashboard greeting based on real student history
+- Daily recommendations based on lesson progress and placement signals
+- Progress framing and motivation messages
+- Coach uses student memory: last session, streak, recurring mistakes
 
-## Phase 5: Media And RAG
+## Phase 5: Pronunciation and Media
 
-- Add signed uploads.
-- Add object storage.
-- Add transcription pipeline.
-- Add media processing workers.
-- Add vector index for KB and student memory.
-- Add permissioned RAG retrieval.
+- Real audio upload and storage (requires consent + retention design)
+- Pronunciation Agent: score attempts against the phrase, return error list
+- Pronunciation history stored per student, fed into AI Teacher context
+- Video recording for in-person classes with teacher consent workflow
+- Media deletion and retention policies
 
-## Phase 6: Teacher And Business Operations
+## Phase 6: RAG and Contextual Memory
 
-- Expand teacher dashboard beyond assigned-student summary.
-- Expand assignment workflows with scheduling, cohorts, and teacher capacity.
-- Add pricing and payment records.
-- Add subscription status.
-- Add audit logs.
-- Add export and deletion workflows.
+- Vector index for the English KB (curriculum, grammar, vocabulary, pronunciation)
+- Chunk and embed all `kb/english/` files
+- Permissioned retrieval: global KB is public, student memory is isolated per student
+- Student memory: mistakes, pronunciation errors, session summaries stored and retrieved
+- AI Teacher receives: compact student history + relevant KB chunks + current lesson
+
+## Phase 7: Teacher Tools and Business Operations
+
+- Teacher summary agent: per-student progress summaries using real history
+- Teacher notes on students
+- Class scheduling and lesson assignment
+- Subscription and payment gateway integration
+- Audit logs for GDPR/LGPD compliance
+- Data export and deletion workflows
+
+## Phase 8: Frontend Migration
+
+- Move from single `app.js` / `index.html` to React + TypeScript
+- Real routing (React Router or TanStack Router)
+- Reusable component library
+- Authenticated and public layouts
+- Proper loading, error, and empty states throughout

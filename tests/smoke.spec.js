@@ -41,19 +41,27 @@ test.describe("FluentPath English smoke flow", () => {
       "New phrase ready. Record your attempt whenever you want.",
     );
 
-    const placementForm = page.locator("#placementForm");
+    // Start placement test (button label depends on whether a prior result exists)
+    await page.getByRole("button", { name: /take placement test|retake test/i }).click();
+    await expect(page.locator("#placementTestForm")).toBeVisible({ timeout: 15000 });
 
-    await placementForm.locator("select[name='level']").selectOption({ label: "Beginner" });
-    await placementForm.locator("select[name='goal']").selectOption({ label: "Daily conversation" });
-    await placementForm
-      .getByLabel("Writing sample")
-      .fill("I want to improve my English for work and daily conversations.");
-    await placementForm.getByRole("button", { name: "Create baseline" }).click();
-    await expect(page.locator("#assessmentFeedback")).toHaveText(
-      "Saved. Your AI Teacher will start with Beginner material focused on daily conversation. The dashboard now shows an initial baseline estimate, not a measured score yet.",
-    );
-    await expect(page.locator("#fluencyValue")).toHaveText("12%");
-    await expect(page.locator("#progressNote")).toContainText("Initial baseline estimated");
+    // Fill every text input with a plausible answer
+    const textInputs = page.locator("#placementTestForm input[type='text']");
+    const inputCount = await textInputs.count();
+    for (let i = 0; i < inputCount; i++) {
+      await textInputs.nth(i).fill("went");
+    }
+    // Select the first radio option in any multiple-choice questions
+    const radioGroups = page.locator("#placementTestForm input[type='radio']:first-of-type");
+    const radioCount = await radioGroups.count();
+    for (let i = 0; i < radioCount; i++) {
+      await radioGroups.nth(i).check();
+    }
+
+    await page.getByRole("button", { name: "Submit answers" }).click();
+    await expect(page.locator("#assessmentFeedback")).not.toBeEmpty({ timeout: 30000 });
+    await expect(page.locator("#fluencyValue")).toHaveText(/\d+%/);
+    await expect(page.locator("#progressNote")).toContainText("baseline");
 
     await page.getByRole("button", { name: "Record audio" }).click();
     await expect(page.locator("#classFeedback")).toHaveText(
@@ -234,7 +242,7 @@ test.describe("FluentPath English smoke flow", () => {
     await signupForm.getByRole("button", { name: "Create student account" }).click();
 
     await expect(page).toHaveURL(/#dashboard$/);
-    await expect(page.locator("#signupFeedback")).toHaveText(
+    await expect(page.locator("#signupFeedback")).toContainText(
       "Student profile saved and assigned to the teacher from the invite link.",
     );
 

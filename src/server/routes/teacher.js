@@ -24,6 +24,23 @@ async function handleTeacherRoutes({ request, response, parsedUrl, storage }) {
     return true;
   }
 
+  const reviewMatch = parsedUrl.pathname.match(
+    /^\/api\/teacher\/level-suggestions\/([^/]+)\/(approve|dismiss)$/,
+  );
+
+  if (request.method === "POST" && reviewMatch) {
+    const session = await requireTeacher(request, response, storage);
+
+    if (!session) {
+      return true;
+    }
+
+    const [, studentId, action] = reviewMatch;
+    await storage.reviewLevelSuggestion(studentId, action);
+    sendJson(response, 200, { ok: true });
+    return true;
+  }
+
   return false;
 }
 

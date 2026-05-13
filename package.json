@@ -4,10 +4,10 @@
   "private": true,
   "description": "Prototype for an English learning app with an AI coach, courses, pronunciation practice, and lesson recording.",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node --env-file=.env server.js",
+    "dev": "node --env-file=.env server.js",
     "test": "npm run check && npm run test:e2e",
-    "check": "node --check app.js && node --check server.js && node --check src/security.js && node --check src/storage/index.js && node --check src/storage/memory.js && node --check src/storage/postgres.js && node --check src/server/auth.js && node --check src/server/cookies.js && node --check src/server/http.js && node --check src/server/static.js && node --check src/server/validators.js && node --check src/server/routes/account.js && node --check src/server/routes/admin.js && node --check src/server/routes/auth.js && node --check src/server/routes/index.js && node --check src/server/routes/pronunciation.js && node --check src/server/routes/teacher.js && node --check scripts/migrate.js && node --check scripts/seed.js",
+    "check": "node --check app.js && node --check server.js && node --check src/security.js && node --check src/storage/index.js && node --check src/storage/memory.js && node --check src/storage/postgres.js && node --check src/server/auth.js && node --check src/server/cookies.js && node --check src/server/http.js && node --check src/server/static.js && node --check src/server/validators.js && node --check src/server/routes/account.js && node --check src/server/routes/admin.js && node --check src/server/routes/auth.js && node --check src/server/routes/index.js && node --check src/server/routes/placement.js && node --check src/server/routes/pronunciation.js && node --check src/server/routes/teacher.js && node --check src/agents/placement.js && node --check scripts/migrate.js && node --check scripts/seed.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
     "test:e2e": "playwright test",
@@ -20,6 +20,7 @@
     "@playwright/test": "^1.60.0"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "pg": "^8.20.0"
   }
 }

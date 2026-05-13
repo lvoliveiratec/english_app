@@ -6,6 +6,7 @@ The KB is written as human-readable source material first. Later, these files ca
 
 ## Files
 
+### Teaching and Learning
 - `cefr-level-guide.md`: level expectations from A1 to C2.
 - `grammar-syllabus.md`: grammar topics by level.
 - `pronunciation-guide.md`: sounds, stress, rhythm, and pronunciation feedback.
@@ -14,6 +15,12 @@ The KB is written as human-readable source material first. Later, these files ca
 - `speaking-assessment-rubric.md`: speaking evaluation criteria.
 - `correction-policy.md`: how the AI Teacher Agent should correct students.
 - `lesson-patterns.md`: reusable lesson and practice formats.
+
+### Placement Assessment
+- `assessment-grammar.md`: gap-fill grammar questions and scoring guide by CEFR level (A1–B2).
+- `assessment-vocabulary.md`: vocabulary ranges, question formats, and word lists by level.
+- `assessment-reading.md`: sample texts and comprehension questions for A1–B2 reading placement.
+- `assessment-listening.md`: transcript cloze, dictogloss, and dialogue comprehension methods for text-based listening assessment.
 
 ## RAG Rules
 

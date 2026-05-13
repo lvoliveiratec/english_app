@@ -4,78 +4,173 @@ This file guides AI coding agents working in this repository.
 
 ## Project Shape
 
-FluentPath English is an English-learning app prototype moving toward a real backend product.
+FluentPath English is an English learning platform with real AI-powered placement, running in production.
 
 Current stack:
 
-- Plain HTML/CSS/JavaScript frontend.
-- Node.js HTTP server.
-- PostgreSQL via `DATABASE_URL`.
-- In-memory storage fallback for local development.
+- Plain HTML/CSS/JavaScript frontend (SPA via hash routing).
+- Node.js HTTP server (no framework), modular routes under `src/server/routes/`.
+- PostgreSQL via `DATABASE_URL`. In-memory fallback for local dev and tests.
+- Anthropic Claude API (`claude-haiku-4-5-20251001`) for placement test generation and evaluation.
 - Playwright end-to-end smoke tests.
 
 ## Important Commands
 
 ```bash
 npm install
-npm test
-npm run check
-npm run test:e2e
-npm run db:migrate
+npm test                                    # syntax check + E2E
+npm run check                               # syntax check only
+npm run test:e2e                            # Playwright only
+npm run test:e2e:ui                         # Playwright with UI
+node --env-file=.env scripts/migrate.js     # run DB migrations
+node --env-file=.env scripts/seed.js        # seed demo data
 ```
 
 Run the app:
 
 ```bash
-npm start
+npm start     # reads .env automatically via --env-file
 ```
 
-Use PostgreSQL:
+## Environment
 
-```bash
-export DATABASE_URL="postgres://USER:PASSWORD@localhost:5432/fluentpath"
-npm run db:migrate
-npm start
+Copy `.env.example` to `.env` and fill in:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...        # required for placement AI features
+DATABASE_URL=postgres://...         # optional — in-memory fallback if not set
+HOST=0.0.0.0                        # use 0.0.0.0 for Cloudflare Tunnel / Cloud Run
+PORT=5173
 ```
 
 ## Development Rules
 
 - Keep product copy in English.
 - Keep student media, transcripts, and profile data treated as sensitive.
-- Do not store plaintext passwords.
+- Do not store plaintext passwords (scrypt via `src/security.js`).
 - Do not process real audio/video until consent, retention, and deletion workflows exist.
 - Keep tests updated when changing login, signup, dashboard, admin, storage, or routing.
 - Prefer small modules over growing `server.js`, `app.js`, or `index.html`.
 - Backend routes live under `src/server/routes/`.
+- AI agent logic lives under `src/agents/`.
 - Storage implementations live under `src/storage/`.
-- Database schema lives in `db/schema.sql`.
+- Database schema lives in `db/schema.sql` (idempotent — uses `create if not exists` and `alter ... add column if not exists`).
+- Both `PostgresStorage` and `MemoryStorage` must implement the same interface. Add every new storage method to both.
+- Use prompt caching (`cache_control: { type: "ephemeral" }`) on large static system prompts in Claude API calls.
+- Strip markdown code fences from Claude responses before JSON.parse (`response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()`).
 
-## Current Architecture Direction
+## Current Architecture
 
-The frontend is still a static prototype. As it grows, split it into either:
+```
+server.js               entry point — HTTP server + storage factory
+app.js                  frontend SPA (all client-side JS)
+index.html              single HTML file, hash-routed pages
+styles.css              all styles
 
-- modular plain JavaScript under `src/client/`, or
-- a React + TypeScript frontend with real routing.
+src/agents/
+  placement.js          generatePlacementQuestions() + runPlacementAgent()
+                        — loads CEFR guide + 4 assessment KB files as cached system prompt
+                        — returns structured JSON: { feedback, level, metrics, priorities }
 
-The backend is being split into:
+src/server/routes/
+  index.js              routes dispatcher
+  auth.js               signup, login, logout, me, invites
+  account.js            GET/PUT account, PUT password
+  placement.js          GET /api/placement, GET /api/placement/questions, POST /api/placement
+  pronunciation.js      POST /api/pronunciation-attempts
+  teacher.js            GET /api/teacher/summary, POST level-suggestion approve/dismiss
+  admin.js              admin CRUD + POST level-suggestion approve/dismiss
 
-- `src/server/http.js`
-- `src/server/cookies.js`
-- `src/server/auth.js`
-- `src/server/validators.js`
-- `src/server/routes/`
-- `src/storage/`
+src/storage/
+  index.js              createStorage() — postgres if DATABASE_URL, else memory
+  postgres.js           PostgresStorage class
+  memory.js             MemoryStorage class (in-memory demo data)
+
+src/server/
+  auth.js               getSession / getAdminSession / getTeacherSession
+  cookies.js            parse / create / clear session cookie
+  http.js               readRequestBody / sendJson
+  static.js             static file serving
+  validators.js         normalizeXxx input sanitizers
+
+src/security.js         scrypt hashing, timing-safe verify, createToken
+
+db/schema.sql           PostgreSQL schema (all tables, idempotent)
+scripts/migrate.js      runs schema.sql against DATABASE_URL
+scripts/seed.js         inserts demo users + demo data
+
+kb/english/             knowledge base loaded into Claude API system prompts
+  cefr-level-guide.md
+  assessment-grammar.md
+  assessment-vocabulary.md
+  assessment-reading.md
+  assessment-listening.md
+  correction-policy.md
+  grammar-syllabus.md
+  lesson-patterns.md
+  pronunciation-guide.md
+  speaking-assessment-rubric.md
+  vocabulary-themes.md
+  writing-spelling-guide.md
+
+agents/                 product AI agent specs (contracts, not yet all wired)
+  ai-coach.md
+  ai-teacher.md
+  placement-agent.md    ← implemented in src/agents/placement.js
+  pronunciation-agent.md
+  teacher-summary-agent.md
+
+tests/smoke.spec.js     Playwright E2E (7 tests, runs against live server)
+```
+
+## Key Data Flow — Placement Test
+
+```
+Student clicks "Take placement test"
+  → GET /api/placement/questions
+    → generatePlacementQuestions({ profile, selfReportedLevel })
+    → Claude generates 7 questions (grammar ×2, vocabulary ×2, reading ×2, listening ×1)
+    → returns { questions: [...] }
+
+Student fills form and submits
+  → POST /api/placement { questions, answers }
+    → runPlacementAgent({ profile, level, goal, questions, answers })
+    → Claude evaluates → { feedback, level, metrics, priorities }
+    → storage.savePlacement(studentId, result)
+    → if result.level !== profile.level → storage.createLevelSuggestion(...)
+    → returns result to frontend
+
+Teacher / Admin sees pending suggestion in dashboard
+  → POST /api/teacher/level-suggestions/:studentId/approve
+    → storage.reviewLevelSuggestion(studentId, "approve")
+    → student_profiles.level = suggested_level
+```
+
+## Key DB Tables
+
+| Table | Purpose |
+|---|---|
+| `users` | Auth — email, password_hash, role |
+| `sessions` | Token-based sessions |
+| `student_profiles` | Level, goal, interests, assignment_status, suggested_level, level_review_status |
+| `teacher_profiles` | Specialty, status |
+| `teacher_student_assignments` | Many-to-many, source, notes |
+| `teacher_invites` | Invite codes for auto-assignment |
+| `ai_feedback` | Placement results and level suggestions (source_type: 'placement', 'level_suggestion') |
+| `lesson_progress` | Per-skill completion, difficulty, recommendation |
+| `pronunciation_attempts` | Phrase, duration, processing_status |
+| `consent_records` / `media_records` | Future audio/video pipeline |
+| `courses` / `lessons` | Curriculum (data exists, player not built yet) |
+| `plans` / `payments` | Billing (schema only) |
 
 ## Product Agents
 
-Product agent specifications live in `agents/`.
+Agent specs in `agents/` define behavior and contracts.
 
-These are not fully implemented in code yet. They define the future behavior and contracts for:
+- `placement-agent.md` → **implemented** in `src/agents/placement.js`
+- `ai-coach.md` → UI placeholder only
+- `ai-teacher.md` → not yet wired to Claude API
+- `pronunciation-agent.md` → not yet wired
+- `teacher-summary-agent.md` → not yet wired
 
-- AI Coach
-- AI Teacher
-- Placement Agent
-- Pronunciation Agent
-- Teacher Summary Agent
-
-When implementing AI features, use these specs as contracts and keep student-specific memory permissioned server-side.
+When implementing new agents: follow the existing pattern in `src/agents/placement.js`, use `cache_control: { type: "ephemeral" }` on the system prompt, load relevant KB files, strip markdown fences from JSON responses.

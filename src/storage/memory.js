@@ -115,6 +115,7 @@ function createDemoState() {
       },
     ],
     pronunciationAttempts: [],
+    placements: [],
     payments: [{ userId: studentId, status: "paid", amountCents: 5900, paidAt: nowIso() }],
     plans: [
       {
@@ -378,6 +379,13 @@ class MemoryStorage {
         pendingSummaries: studentsNeedingAttention.length,
       },
       assignedStudents,
+      levelSuggestions: assignedStudents
+        .map((s) => {
+          const profile = this.state.studentProfiles.find((p) => p.userId === s.studentId);
+          if (!profile || profile.levelReviewStatus !== "pending" || !profile.suggestedLevel) return null;
+          return { studentId: s.studentId, studentName: s.studentName, currentLevel: profile.level, suggestedLevel: profile.suggestedLevel };
+        })
+        .filter(Boolean),
       nextActions: assignedStudents.length
         ? [
             "Review students with completion below 70%.",
@@ -841,6 +849,39 @@ class MemoryStorage {
       profile,
       address: this.getAddressForUser(user.id),
     };
+  }
+
+  async createLevelSuggestion(studentId, { currentLevel, suggestedLevel, reason }) {
+    const profile = this.state.studentProfiles.find((item) => item.userId === studentId);
+    if (profile) {
+      profile.suggestedLevel = suggestedLevel;
+      profile.levelReviewStatus = "pending";
+    }
+  }
+
+  async reviewLevelSuggestion(studentId, action) {
+    const profile = this.state.studentProfiles.find((item) => item.userId === studentId);
+    if (!profile) return;
+    if (action === "approve" && profile.suggestedLevel) {
+      profile.level = profile.suggestedLevel;
+    }
+    profile.suggestedLevel = null;
+    profile.levelReviewStatus = action === "approve" ? "approved" : "dismissed";
+  }
+
+  async savePlacement(studentId, { feedback, level, priorities }) {
+    this.state.placements = this.state.placements.filter(
+      (item) => item.studentId !== studentId,
+    );
+    this.state.placements.push({ studentId, feedback, level, priorities, createdAt: nowIso() });
+  }
+
+  async getLatestPlacement(studentId) {
+    const entry = [...this.state.placements]
+      .reverse()
+      .find((item) => item.studentId === studentId);
+    if (!entry) return null;
+    return { feedback: entry.feedback, level: entry.level, priorities: entry.priorities, createdAt: entry.createdAt };
   }
 }
 
