@@ -53,12 +53,41 @@ function createDemoState() {
         foodAndDrinks: "Coffee and pizza.",
         sports: "Gym",
         motivation: "Improve English for real conversations.",
+        assignmentStatus: "assigned",
         createdAt: nowIso(),
         updatedAt: nowIso(),
       },
     ],
-    teacherProfiles: [{ userId: teacherId, fullName: "Ana Teacher", status: "active" }],
+    teacherProfiles: [
+      { userId: teacherId, fullName: "Ana Teacher", specialty: "Pronunciation", status: "active" },
+    ],
     adminProfiles: [{ userId: adminId, fullName: "Admin", status: "active" }],
+    teacherStudentAssignments: [
+      {
+        id: createId("assign"),
+        teacherId,
+        studentId,
+        status: "active",
+        source: "seed",
+        assignedByAdminId: null,
+        notes: "Demo assignment for teacher dashboard.",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      },
+    ],
+    teacherInvites: [
+      {
+        id: createId("invite"),
+        teacherId,
+        code: "ANA-TEACHER",
+        status: "active",
+        maxUses: null,
+        usedCount: 0,
+        expiresAt: null,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      },
+    ],
     addresses: [
       {
         userId: studentId,
@@ -124,7 +153,7 @@ class MemoryStorage {
     return { ok: true, storage: this.kind };
   }
 
-  async createStudentAccount({ email, password, profile }) {
+  async createStudentAccount({ email, password, profile, inviteCode = "" }) {
     const normalizedEmail = email.toLowerCase();
     const existingUser = this.state.users.find((user) => user.email === normalizedEmail);
 
@@ -134,6 +163,7 @@ class MemoryStorage {
       throw error;
     }
 
+    const invite = inviteCode ? this.getValidInvite(inviteCode) : null;
     const userId = createId("usr");
     const now = nowIso();
     const user = {
@@ -148,6 +178,7 @@ class MemoryStorage {
     const studentProfile = {
       userId,
       ...profile,
+      assignmentStatus: invite ? "assigned" : "pending_assignment",
       createdAt: now,
       updatedAt: now,
     };
@@ -155,6 +186,17 @@ class MemoryStorage {
     this.state.users.push(user);
     this.state.studentProfiles.push(studentProfile);
     this.upsertAddress(userId, profile.address || {});
+
+    if (invite) {
+      this.assignStudentToTeacher({
+        teacherId: invite.teacherId,
+        studentId: userId,
+        source: "invite",
+        notes: "Assigned automatically through teacher invite link.",
+      });
+      invite.usedCount += 1;
+      invite.updatedAt = now;
+    }
 
     return this.toSessionPayload(user, studentProfile);
   }
@@ -292,18 +334,87 @@ class MemoryStorage {
     return attempt;
   }
 
+  async getTeacherSummary(teacherId) {
+    const user = this.state.users.find((item) => item.id === teacherId && item.role === "teacher");
+    const profile = this.state.teacherProfiles.find((item) => item.userId === teacherId);
+    const assignments = this.state.teacherStudentAssignments.filter(
+      (item) => item.teacherId === teacherId && item.status === "active",
+    );
+    const assignedStudents = assignments.map((assignment) => {
+      const student = this.state.users.find((item) => item.id === assignment.studentId);
+      const studentProfile = this.state.studentProfiles.find(
+        (item) => item.userId === assignment.studentId,
+      );
+      const progress = this.state.lessonProgress.find(
+        (item) => item.studentId === assignment.studentId,
+      );
+
+      return {
+        studentId: assignment.studentId,
+        studentName: studentProfile?.fullName || student?.displayName || "Student",
+        level: studentProfile?.level || "Unknown",
+        goal: studentProfile?.goal || "Unknown",
+        completion: progress?.completion || 0,
+        difficulty: progress?.difficulty || "Needs first lesson data",
+        recommendation: progress?.recommendation || "Complete placement and first lesson.",
+        notes: assignment.notes || "",
+      };
+    });
+    const studentsNeedingAttention = assignedStudents.filter((student) => student.completion < 70);
+
+    return {
+      storage: this.kind,
+      teacher: {
+        id: teacherId,
+        fullName: profile?.fullName || user?.displayName || "Teacher",
+        specialty: profile?.specialty || "General English",
+        status: profile?.status || "active",
+      },
+      invite: this.getOrCreateTeacherInvite(teacherId),
+      totals: {
+        assignedStudents: assignedStudents.length,
+        activeStudents: assignedStudents.length,
+        studentsNeedingAttention: studentsNeedingAttention.length,
+        pendingSummaries: studentsNeedingAttention.length,
+      },
+      assignedStudents,
+      nextActions: assignedStudents.length
+        ? [
+            "Review students with completion below 70%.",
+            "Prepare one short speaking correction for the next class.",
+            "Confirm consent before any class recording.",
+          ]
+        : [
+            "Ask an administrator to assign students to this teacher.",
+            "Add a teacher-student assignment before showing private learning data.",
+          ],
+    };
+  }
+
   async getAdminResources() {
+    const activeAssignments = this.state.teacherStudentAssignments.filter(
+      (assignment) => assignment.status === "active",
+    );
+
     return {
       students: this.state.users
         .filter((user) => user.role === "student")
         .map((user) => {
           const profile = this.state.studentProfiles.find((item) => item.userId === user.id);
+          const assignment = activeAssignments.find((item) => item.studentId === user.id);
+          const teacherProfile = assignment
+            ? this.state.teacherProfiles.find((item) => item.userId === assignment.teacherId)
+            : null;
+
           return {
             id: user.id,
             email: user.email,
             fullName: profile?.fullName || user.displayName,
             level: profile?.level || "",
             goal: profile?.goal || "",
+            assignmentStatus: profile?.assignmentStatus || "pending_assignment",
+            teacherId: assignment?.teacherId || "",
+            teacherName: teacherProfile?.fullName || "",
             status: "active",
           };
         }),
@@ -321,6 +432,59 @@ class MemoryStorage {
         }),
       plans: this.state.plans,
       courses: this.state.courses,
+      assignments: activeAssignments.map((assignment) => {
+        const studentProfile = this.state.studentProfiles.find(
+          (item) => item.userId === assignment.studentId,
+        );
+        const teacherProfile = this.state.teacherProfiles.find(
+          (item) => item.userId === assignment.teacherId,
+        );
+
+        return {
+          id: assignment.id,
+          studentId: assignment.studentId,
+          studentName: studentProfile?.fullName || "Student",
+          teacherId: assignment.teacherId,
+          teacherName: teacherProfile?.fullName || "Teacher",
+          source: assignment.source || "manual",
+          notes: assignment.notes || "",
+        };
+      }),
+    };
+  }
+
+  async createAdminAssignment(data, adminId) {
+    const student = this.state.users.find(
+      (item) => item.id === data.studentId && item.role === "student",
+    );
+    const teacher = this.state.users.find(
+      (item) => item.id === data.teacherId && item.role === "teacher",
+    );
+
+    if (!student || !teacher) {
+      const error = new Error("Student and teacher are required.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const assignment = this.assignStudentToTeacher({
+      teacherId: data.teacherId,
+      studentId: data.studentId,
+      assignedByAdminId: adminId,
+      source: "manual",
+      notes: data.notes || "Assigned by admin.",
+    });
+    const studentProfile = this.state.studentProfiles.find((item) => item.userId === data.studentId);
+    const teacherProfile = this.state.teacherProfiles.find((item) => item.userId === data.teacherId);
+
+    return {
+      id: assignment.id,
+      studentId: data.studentId,
+      studentName: studentProfile?.fullName || student.displayName,
+      teacherId: data.teacherId,
+      teacherName: teacherProfile?.fullName || teacher.displayName,
+      source: assignment.source,
+      notes: assignment.notes,
     };
   }
 
@@ -398,6 +562,7 @@ class MemoryStorage {
 
     this.state.users.push(user);
     this.state.teacherProfiles.push(profile);
+    this.getOrCreateTeacherInvite(userId);
     return { id: user.id, email: user.email, fullName: profile.fullName };
   }
 
@@ -501,6 +666,140 @@ class MemoryStorage {
     }
 
     return this.state.adminProfiles.find((profile) => profile.userId === user.id) || null;
+  }
+
+  getValidInvite(code) {
+    const normalizedCode = code.toString().trim().toUpperCase();
+    const invite = this.state.teacherInvites.find((item) => item.code === normalizedCode);
+    const teacher = invite && this.state.users.find((item) => item.id === invite.teacherId);
+
+    if (
+      !invite ||
+      invite.status !== "active" ||
+      teacher?.role !== "teacher" ||
+      (invite.expiresAt && new Date(invite.expiresAt) <= new Date()) ||
+      (Number.isFinite(invite.maxUses) && invite.usedCount >= invite.maxUses)
+    ) {
+      const error = new Error("Invite link is invalid or inactive.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return invite;
+  }
+
+  async getTeacherInviteByCode(code) {
+    let invite;
+
+    try {
+      invite = this.getValidInvite(code);
+    } catch (error) {
+      return null;
+    }
+
+    const profile = this.state.teacherProfiles.find((item) => item.userId === invite.teacherId);
+
+    return {
+      code: invite.code,
+      teacher: {
+        id: invite.teacherId,
+        fullName: profile?.fullName || "Teacher",
+        specialty: profile?.specialty || "General English",
+      },
+    };
+  }
+
+  getOrCreateTeacherInvite(teacherId) {
+    const existing = this.state.teacherInvites.find(
+      (item) => item.teacherId === teacherId && item.status === "active",
+    );
+
+    if (existing) {
+      return {
+        code: existing.code,
+        status: existing.status,
+        usedCount: existing.usedCount,
+        maxUses: existing.maxUses,
+        expiresAt: existing.expiresAt,
+      };
+    }
+
+    const teacher = this.state.teacherProfiles.find((item) => item.userId === teacherId);
+    const base = (teacher?.fullName || "TEACHER")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 24);
+    const invite = {
+      id: createId("invite"),
+      teacherId,
+      code: `${base || "TEACHER"}-${createToken().slice(0, 6).toUpperCase()}`,
+      status: "active",
+      maxUses: null,
+      usedCount: 0,
+      expiresAt: null,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+
+    this.state.teacherInvites.push(invite);
+    return {
+      code: invite.code,
+      status: invite.status,
+      usedCount: invite.usedCount,
+      maxUses: invite.maxUses,
+      expiresAt: invite.expiresAt,
+    };
+  }
+
+  assignStudentToTeacher({
+    teacherId,
+    studentId,
+    assignedByAdminId = null,
+    source = "manual",
+    notes = "",
+  }) {
+    this.state.teacherStudentAssignments.forEach((assignment) => {
+      if (assignment.studentId === studentId && assignment.teacherId !== teacherId) {
+        assignment.status = "inactive";
+        assignment.updatedAt = nowIso();
+      }
+    });
+
+    const existing = this.state.teacherStudentAssignments.find(
+      (item) => item.teacherId === teacherId && item.studentId === studentId,
+    );
+    let assignment = existing;
+
+    if (existing) {
+      existing.status = "active";
+      existing.source = source || existing.source || "manual";
+      existing.assignedByAdminId = assignedByAdminId || existing.assignedByAdminId || null;
+      existing.notes = notes || existing.notes;
+      existing.updatedAt = nowIso();
+    } else {
+      assignment = {
+        id: createId("assign"),
+        teacherId,
+        studentId,
+        status: "active",
+        source,
+        assignedByAdminId,
+        notes,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      this.state.teacherStudentAssignments.push(assignment);
+    }
+
+    const profile = this.state.studentProfiles.find((item) => item.userId === studentId);
+
+    if (profile) {
+      profile.assignmentStatus = "assigned";
+      profile.updatedAt = nowIso();
+    }
+
+    return assignment;
   }
 
   getAddressForUser(userId) {

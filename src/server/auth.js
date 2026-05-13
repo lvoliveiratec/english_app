@@ -10,7 +10,13 @@ async function getAdminSession(request, storage) {
   return session?.user?.role === "admin" ? session : null;
 }
 
+async function getTeacherSession(request, storage) {
+  const session = await getSession(request, storage);
+  return session?.user?.role === "teacher" ? session : null;
+}
+
 module.exports = {
   getAdminSession,
   getSession,
+  getTeacherSession,
 };

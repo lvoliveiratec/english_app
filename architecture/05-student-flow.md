@@ -11,6 +11,8 @@ Home
     -> Login
   -> Login
     -> Create Account
+  -> Teacher Invite Link
+    -> Create Account
 ```
 
 ## Login Flow
@@ -24,6 +26,8 @@ Login
 ```
 
 The current prototype uses backend auth when served through Node and keeps a local fallback for static previews. The signup flow also collects phone and address information for the student profile.
+
+Teacher invite links use `?invite=CODE#signup`. When the invite code is valid, signup creates an active teacher/student assignment.
 
 ## First Student Session
 
@@ -64,6 +68,24 @@ Future deeper assessment should also measure:
 - Preferred practice type.
 - Study schedule.
 
+## Teacher Assignment Flow
+
+```text
+Create Account Without Invite
+  -> student profile assignment_status = pending_assignment
+  -> Admin Dashboard
+  -> assign student to teacher
+  -> Teacher Dashboard includes student
+```
+
+```text
+Create Account With Teacher Invite
+  -> validate invite code
+  -> create student profile
+  -> create active teacher_student_assignments row
+  -> Teacher Dashboard includes student
+```
+
 ## Lesson Flow
 
 ```text
@@ -84,13 +106,14 @@ Skills:
 - Listening.
 - Pronunciation.
 
-## Future Teacher Flow
+## Teacher Flow
 
 ```text
 Teacher Dashboard
-  -> select student
+  -> view assigned students
   -> view progress summary
   -> view recurring mistakes
+  -> share invite link
   -> assign lessons
   -> review authorized class notes/transcripts
 ```

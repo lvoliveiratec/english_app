@@ -1,6 +1,7 @@
 const { getAdminSession } = require("../auth");
 const { readRequestBody, sendJson } = require("../http");
 const {
+  normalizeAdminAssignment,
   normalizeAdminCourse,
   normalizeAdminPlan,
   normalizeAdminStudent,
@@ -42,6 +43,21 @@ async function handleAdminRoutes({ request, response, parsedUrl, storage }) {
     }
 
     sendJson(response, 200, await storage.getAdminResources());
+    return true;
+  }
+
+  if (request.method === "POST" && parsedUrl.pathname === "/api/admin/assignments") {
+    const session = await requireAdmin(request, response, storage);
+
+    if (!session) {
+      return true;
+    }
+
+    const payload = await storage.createAdminAssignment(
+      normalizeAdminAssignment(await readRequestBody(request)),
+      session.user.id,
+    );
+    sendJson(response, 201, payload);
     return true;
   }
 

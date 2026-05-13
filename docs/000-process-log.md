@@ -75,6 +75,23 @@ This document records what we are building and why each step was taken.
 - Reviewed and updated `architecture/06-diagrams.md` to reflect the current backend modules, admin flow, Account flow, PostgreSQL schema, pronunciation-attempt metadata, and future media/RAG pipeline.
 - Updated backend, RAG, AI Teacher, agent role, and pronunciation agent documentation to match the current implementation.
 
+## 2026-05-13
+
+- Added a teacher dashboard route and UI for human teachers.
+- Teacher login now routes to `#teacher` instead of the student dashboard.
+- Added `GET /api/teacher/summary` protected by teacher role checks.
+- Added `teacher_student_assignments` so teachers only see assigned students.
+- Added `teacher_invites` and invite-code validation.
+- Signup through a teacher invite link now automatically assigns the new student to the inviting teacher.
+- Normal signup keeps students in `pending_assignment` until an admin assigns them.
+- Added a teacher dashboard invite-link panel with copy support.
+- Added Admin dashboard assignment management so admins can manually assign or reassign students to teachers.
+- Added assignment metadata: `source` and `assigned_by_admin_id`.
+- Updated PostgreSQL and in-memory storage adapters for teacher summaries, invite links, assignment creation, and active assignment lookups.
+- Added Playwright coverage for teacher login, invite signup assignment, and admin manual assignment.
+- Improved mobile layout stability across teacher/admin/student pages and verified no horizontal overflow at common mobile widths.
+- Used a Cloudflare Quick Tunnel for mobile device testing against the local app.
+
 ## Important Decisions
 
 - The current prototype does not upload raw audio or video to any server.
@@ -87,3 +104,5 @@ This document records what we are building and why each step was taken.
 - Passwords must never be stored directly in frontend storage or plain database fields.
 - The local student profile is a prototype data shape, not a production storage model.
 - User address and contact changes belong behind authenticated account routes, not public profile-only storage.
+- Teacher access to student learning data is assignment-based.
+- Teacher invite links can assign students automatically, but admin manual assignment remains the operational fallback and correction path.

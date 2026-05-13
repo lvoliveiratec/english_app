@@ -1,7 +1,7 @@
 const { clearSessionCookie, createSessionCookie, parseCookies } = require("../cookies");
 const { readRequestBody, sendJson } = require("../http");
 const { getSession } = require("../auth");
-const { normalizeStudentProfile } = require("../validators");
+const { normalizeInviteCode, normalizeStudentProfile } = require("../validators");
 
 async function handleAuthRoutes({ request, response, parsedUrl, storage }) {
   if (request.method === "POST" && parsedUrl.pathname === "/api/auth/signup") {
@@ -15,9 +15,29 @@ async function handleAuthRoutes({ request, response, parsedUrl, storage }) {
     }
 
     const profile = normalizeStudentProfile(body.profile);
-    const payload = await storage.createStudentAccount({ email, password, profile });
+    const inviteCode = normalizeInviteCode(body.inviteCode);
+    const payload = await storage.createStudentAccount({ email, password, profile, inviteCode });
     const token = await storage.createSession(payload.user.id);
     sendJson(response, 201, payload, { "Set-Cookie": createSessionCookie(token) });
+    return true;
+  }
+
+  if (request.method === "GET" && parsedUrl.pathname.startsWith("/api/invites/")) {
+    const code = normalizeInviteCode(decodeURIComponent(parsedUrl.pathname.slice("/api/invites/".length)));
+
+    if (!code) {
+      sendJson(response, 400, { error: "Invite code is required." });
+      return true;
+    }
+
+    const invite = await storage.getTeacherInviteByCode(code);
+
+    if (!invite) {
+      sendJson(response, 404, { error: "Invite link is invalid or inactive." });
+      return true;
+    }
+
+    sendJson(response, 200, invite);
     return true;
   }
 

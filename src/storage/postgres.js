@@ -12,11 +12,12 @@ class PostgresStorage {
     return { ok: true, storage: this.kind };
   }
 
-  async createStudentAccount({ email, password, profile }) {
+  async createStudentAccount({ email, password, profile, inviteCode = "" }) {
     const client = await this.pool.connect();
 
     try {
       await client.query("begin");
+      const invite = inviteCode ? await this.getValidInvite(client, inviteCode) : null;
       const passwordHash = hashPassword(password);
       const displayName = profile.fullName.split(" ")[0] || profile.fullName;
       const userResult = await client.query(
@@ -44,9 +45,10 @@ class PostgresStorage {
             hobbies,
             food_and_drinks,
             sports,
-            motivation
+            motivation,
+            assignment_status
           )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           returning *
         `,
         [
@@ -64,9 +66,23 @@ class PostgresStorage {
           profile.foodAndDrinks,
           profile.sports,
           profile.motivation,
+          invite ? "assigned" : "pending_assignment",
         ],
       );
       await this.upsertAddress(client, user.id, profile.address || {});
+
+      if (invite) {
+        await this.assignStudentToTeacher(client, {
+          teacherId: invite.teacher_id,
+          studentId: user.id,
+          source: "invite",
+          notes: "Assigned automatically through teacher invite link.",
+        });
+        await client.query(
+          "update teacher_invites set used_count = used_count + 1, updated_at = now() where id = $1",
+          [invite.id],
+        );
+      }
 
       await client.query("commit");
 
@@ -295,14 +311,104 @@ class PostgresStorage {
     return this.mapPronunciationAttempt(result.rows[0]);
   }
 
+  async getTeacherSummary(teacherId) {
+    const profileResult = await this.pool.query(
+      `
+        select users.id, users.email, users.display_name, teacher_profiles.full_name,
+          teacher_profiles.specialty, teacher_profiles.status
+        from users
+        left join teacher_profiles on teacher_profiles.user_id = users.id
+        where users.id = $1 and users.role = 'teacher'
+      `,
+      [teacherId],
+    );
+    const teacher = profileResult.rows[0];
+
+    if (!teacher) {
+      const error = new Error("Teacher not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const studentsResult = await this.pool.query(
+      `
+        select
+          teacher_student_assignments.student_id,
+          student_profiles.full_name as student_name,
+          student_profiles.level,
+          student_profiles.goal,
+          teacher_student_assignments.notes,
+          coalesce(max(lesson_progress.completion), 0)::int as completion,
+          coalesce(max(lesson_progress.difficulty), 'Needs first lesson data') as difficulty,
+          coalesce(max(lesson_progress.recommendation), 'Complete placement and first lesson.') as recommendation
+        from teacher_student_assignments
+        join users students on students.id = teacher_student_assignments.student_id
+          and students.role = 'student'
+        join student_profiles on student_profiles.user_id = students.id
+        left join lesson_progress on lesson_progress.student_id = students.id
+        where teacher_student_assignments.teacher_id = $1
+          and teacher_student_assignments.status = 'active'
+        group by teacher_student_assignments.student_id, student_profiles.full_name,
+          student_profiles.level, student_profiles.goal, teacher_student_assignments.notes,
+          student_profiles.updated_at
+        order by student_profiles.updated_at desc
+      `,
+      [teacherId],
+    );
+    const assignedStudents = studentsResult.rows.map((row) => ({
+      studentId: row.student_id,
+      studentName: row.student_name,
+      level: row.level,
+      goal: row.goal,
+      completion: row.completion,
+      difficulty: row.difficulty,
+      recommendation: row.recommendation,
+      notes: row.notes || "",
+    }));
+    const studentsNeedingAttention = assignedStudents.filter((student) => student.completion < 70);
+
+    return {
+      storage: this.kind,
+      teacher: {
+        id: teacher.id,
+        email: teacher.email,
+        fullName: teacher.full_name || teacher.display_name,
+        specialty: teacher.specialty || "General English",
+        status: teacher.status || "active",
+      },
+      invite: await this.getOrCreateTeacherInvite(teacherId),
+      totals: {
+        assignedStudents: assignedStudents.length,
+        activeStudents: assignedStudents.length,
+        studentsNeedingAttention: studentsNeedingAttention.length,
+        pendingSummaries: studentsNeedingAttention.length,
+      },
+      assignedStudents,
+      nextActions: assignedStudents.length
+        ? [
+            "Review students with completion below 70%.",
+            "Prepare one short speaking correction for the next class.",
+            "Confirm consent before any class recording.",
+          ]
+        : [
+            "Ask an administrator to assign students to this teacher.",
+            "Add a teacher-student assignment before showing private learning data.",
+          ],
+    };
+  }
+
   async getAdminResources() {
-    const [students, teachers, plans, courses] = await Promise.all([
+    const [students, teachers, assignments, plans, courses] = await Promise.all([
       this.pool.query(
         `
           select users.id, users.email, student_profiles.full_name, student_profiles.level,
-            student_profiles.goal, 'active' as status
+            student_profiles.goal, student_profiles.assignment_status, 'active' as status,
+            teacher_student_assignments.teacher_id, teacher_profiles.full_name as teacher_name
           from users
           join student_profiles on student_profiles.user_id = users.id
+          left join teacher_student_assignments on teacher_student_assignments.student_id = users.id
+            and teacher_student_assignments.status = 'active'
+          left join teacher_profiles on teacher_profiles.user_id = teacher_student_assignments.teacher_id
           where users.role = 'student'
           order by student_profiles.updated_at desc
         `,
@@ -315,6 +421,19 @@ class PostgresStorage {
           join teacher_profiles on teacher_profiles.user_id = users.id
           where users.role = 'teacher'
           order by teacher_profiles.updated_at desc
+        `,
+      ),
+      this.pool.query(
+        `
+          select teacher_student_assignments.id, teacher_student_assignments.student_id,
+            student_profiles.full_name as student_name, teacher_student_assignments.teacher_id,
+            teacher_profiles.full_name as teacher_name, teacher_student_assignments.source,
+            teacher_student_assignments.notes
+          from teacher_student_assignments
+          join student_profiles on student_profiles.user_id = teacher_student_assignments.student_id
+          join teacher_profiles on teacher_profiles.user_id = teacher_student_assignments.teacher_id
+          where teacher_student_assignments.status = 'active'
+          order by teacher_student_assignments.updated_at desc
         `,
       ),
       this.pool.query(
@@ -340,6 +459,9 @@ class PostgresStorage {
         fullName: row.full_name,
         level: row.level,
         goal: row.goal,
+        assignmentStatus: row.assignment_status,
+        teacherId: row.teacher_id || "",
+        teacherName: row.teacher_name || "",
         status: row.status,
       })),
       teachers: teachers.rows.map((row) => ({
@@ -365,7 +487,52 @@ class PostgresStorage {
         description: row.description || "",
         status: row.status,
       })),
+      assignments: assignments.rows.map((row) => ({
+        id: row.id,
+        studentId: row.student_id,
+        studentName: row.student_name,
+        teacherId: row.teacher_id,
+        teacherName: row.teacher_name,
+        source: row.source || "manual",
+        notes: row.notes || "",
+      })),
     };
+  }
+
+  async createAdminAssignment(data, adminId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("begin");
+      const student = await client.query("select id, display_name from users where id = $1 and role = 'student'", [
+        data.studentId,
+      ]);
+      const teacher = await client.query("select id, display_name from users where id = $1 and role = 'teacher'", [
+        data.teacherId,
+      ]);
+
+      if (!student.rows[0] || !teacher.rows[0]) {
+        const error = new Error("Student and teacher are required.");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const assignment = await this.assignStudentToTeacher(client, {
+        teacherId: data.teacherId,
+        studentId: data.studentId,
+        assignedByAdminId: adminId,
+        source: "manual",
+        notes: data.notes || "Assigned by admin.",
+      });
+      await client.query("commit");
+
+      return assignment;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async createAdminStudent(data) {
@@ -440,6 +607,7 @@ class PostgresStorage {
         `,
         [userResult.rows[0].id, data.fullName, data.specialty || "", data.status || "active"],
       );
+      await this.getOrCreateTeacherInvite(userResult.rows[0].id, client);
       await client.query("commit");
       return this.mapUser(userResult.rows[0]);
     } catch (error) {
@@ -564,13 +732,155 @@ class PostgresStorage {
       const result = await this.pool.query("select * from teacher_profiles where user_id = $1", [
         user.id,
       ]);
-      return result.rows[0] || null;
+      return result.rows[0] ? this.mapTeacherProfile(result.rows[0]) : null;
     }
 
     const result = await this.pool.query("select * from admin_profiles where user_id = $1", [
       user.id,
     ]);
-    return result.rows[0] || null;
+    return result.rows[0] ? this.mapAdminProfile(result.rows[0]) : null;
+  }
+
+  async getValidInvite(client, code) {
+    const normalizedCode = code.toString().trim().toUpperCase();
+    const result = await client.query(
+      `
+        select teacher_invites.*, users.role
+        from teacher_invites
+        join users on users.id = teacher_invites.teacher_id
+        where teacher_invites.code = $1
+          and teacher_invites.status = 'active'
+          and users.role = 'teacher'
+          and (teacher_invites.expires_at is null or teacher_invites.expires_at > now())
+          and (teacher_invites.max_uses is null or teacher_invites.used_count < teacher_invites.max_uses)
+      `,
+      [normalizedCode],
+    );
+
+    if (!result.rows[0]) {
+      const error = new Error("Invite link is invalid or inactive.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return result.rows[0];
+  }
+
+  async getTeacherInviteByCode(code) {
+    let invite;
+
+    try {
+      invite = await this.getValidInvite(this.pool, code);
+    } catch (error) {
+      return null;
+    }
+
+    const result = await this.pool.query(
+      `
+        select teacher_profiles.full_name, teacher_profiles.specialty
+        from teacher_profiles
+        where teacher_profiles.user_id = $1
+      `,
+      [invite.teacher_id],
+    );
+    const profile = result.rows[0] || {};
+
+    return {
+      code: invite.code,
+      teacher: {
+        id: invite.teacher_id,
+        fullName: profile.full_name || "Teacher",
+        specialty: profile.specialty || "General English",
+      },
+    };
+  }
+
+  async getOrCreateTeacherInvite(teacherId, client = this.pool) {
+    const existing = await client.query(
+      `
+        select code, status, used_count, max_uses, expires_at
+        from teacher_invites
+        where teacher_id = $1 and status = 'active'
+        order by created_at asc
+        limit 1
+      `,
+      [teacherId],
+    );
+
+    if (existing.rows[0]) {
+      return this.mapTeacherInvite(existing.rows[0]);
+    }
+
+    const profileResult = await client.query("select full_name from teacher_profiles where user_id = $1", [
+      teacherId,
+    ]);
+    const base = (profileResult.rows[0]?.full_name || "TEACHER")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 24);
+    const code = `${base || "TEACHER"}-${createToken().slice(0, 6).toUpperCase()}`;
+    const created = await client.query(
+      `
+        insert into teacher_invites (teacher_id, code, status)
+        values ($1, $2, 'active')
+        returning code, status, used_count, max_uses, expires_at
+      `,
+      [teacherId, code],
+    );
+
+    return this.mapTeacherInvite(created.rows[0]);
+  }
+
+  async assignStudentToTeacher(
+    client,
+    { teacherId, studentId, assignedByAdminId = null, source = "manual", notes = "" },
+  ) {
+    await client.query(
+      `
+        update teacher_student_assignments
+        set status = 'inactive', updated_at = now()
+        where student_id = $1 and teacher_id <> $2 and status = 'active'
+      `,
+      [studentId, teacherId],
+    );
+    const result = await client.query(
+      `
+        insert into teacher_student_assignments (
+          teacher_id, student_id, status, source, assigned_by_admin_id, notes
+        )
+        values ($1, $2, 'active', $3, $4, $5)
+        on conflict (teacher_id, student_id)
+        do update set status = 'active', source = excluded.source,
+          assigned_by_admin_id = excluded.assigned_by_admin_id,
+          notes = excluded.notes, updated_at = now()
+        returning id, student_id, teacher_id, source, notes
+      `,
+      [teacherId, studentId, source, assignedByAdminId, notes],
+    );
+    await client.query(
+      "update student_profiles set assignment_status = 'assigned', updated_at = now() where user_id = $1",
+      [studentId],
+    );
+    const names = await client.query(
+      `
+        select student_profiles.full_name as student_name, teacher_profiles.full_name as teacher_name
+        from student_profiles
+        cross join teacher_profiles
+        where student_profiles.user_id = $1 and teacher_profiles.user_id = $2
+      `,
+      [studentId, teacherId],
+    );
+
+    return {
+      id: result.rows[0].id,
+      studentId: result.rows[0].student_id,
+      studentName: names.rows[0]?.student_name || "Student",
+      teacherId: result.rows[0].teacher_id,
+      teacherName: names.rows[0]?.teacher_name || "Teacher",
+      source: result.rows[0].source || "manual",
+      notes: result.rows[0].notes || "",
+    };
   }
 
   async getAddressForUser(userId, client = this.pool) {
@@ -633,8 +943,40 @@ class PostgresStorage {
       foodAndDrinks: profile.food_and_drinks || "",
       sports: profile.sports || "",
       motivation: profile.motivation || "",
+      assignmentStatus: profile.assignment_status || "pending_assignment",
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
+    };
+  }
+
+  mapTeacherProfile(profile) {
+    return {
+      userId: profile.user_id,
+      fullName: profile.full_name,
+      specialty: profile.specialty || "",
+      status: profile.status || "active",
+      createdAt: profile.created_at,
+      updatedAt: profile.updated_at,
+    };
+  }
+
+  mapAdminProfile(profile) {
+    return {
+      userId: profile.user_id,
+      fullName: profile.full_name,
+      status: profile.status || "active",
+      createdAt: profile.created_at,
+      updatedAt: profile.updated_at,
+    };
+  }
+
+  mapTeacherInvite(invite) {
+    return {
+      code: invite.code,
+      status: invite.status,
+      usedCount: invite.used_count || 0,
+      maxUses: invite.max_uses,
+      expiresAt: invite.expires_at,
     };
   }
 

@@ -11,6 +11,8 @@
 - Add Playwright smoke tests for core flows.
 - Add initial backend API with PostgreSQL schema and memory fallback.
 - Add first admin dashboard prototype.
+- Add teacher dashboard prototype.
+- Add teacher invite and teacher/student assignment flows.
 - Add local PostgreSQL through Docker Compose.
 - Add account settings for contact, address, and password updates.
 - Keep all copy English-only.
@@ -32,9 +34,12 @@
 - Add Postgres.
 - Add migrations.
 - Add user, session, student profile, teacher profile, admin profile, course, lesson, progress, consent, and media models.
+- Add teacher invite and teacher/student assignment models.
 - Add API contracts for frontend.
 - Connect signup, login, logout, current profile, account update, and password update to the backend.
 - Add admin summary API and administrative dashboard.
+- Add teacher summary API and teacher dashboard.
+- Add admin assignment API and assignment management.
 - Add account settings APIs and pronunciation attempt metadata.
 - Keep media upload out of the first backend milestone until auth and consent are in place.
 
@@ -58,8 +63,8 @@
 
 ## Phase 6: Teacher And Business Operations
 
-- Add teacher dashboard.
-- Add assignments.
+- Expand teacher dashboard beyond assigned-student summary.
+- Expand assignment workflows with scheduling, cohorts, and teacher capacity.
 - Add pricing and payment records.
 - Add subscription status.
 - Add audit logs.

@@ -3,6 +3,7 @@ const { handleAdminRoutes } = require("./admin");
 const { handleAuthRoutes } = require("./auth");
 const { handleAccountRoutes } = require("./account");
 const { handlePronunciationRoutes } = require("./pronunciation");
+const { handleTeacherRoutes } = require("./teacher");
 
 async function handleApiRequest({ request, response, parsedUrl, storage }) {
   try {
@@ -20,6 +21,10 @@ async function handleApiRequest({ request, response, parsedUrl, storage }) {
     }
 
     if (await handlePronunciationRoutes({ request, response, parsedUrl, storage })) {
+      return true;
+    }
+
+    if (await handleTeacherRoutes({ request, response, parsedUrl, storage })) {
       return true;
     }
 

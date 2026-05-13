@@ -184,6 +184,74 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#passwordFeedback")).toHaveText("Password updated.");
   });
 
+  test("teacher can sign in and view the teacher dashboard", async ({ page }) => {
+    const primaryNav = page.getByRole("navigation", { name: "Primary" });
+
+    await primaryNav.getByRole("link", { name: "Login" }).click();
+
+    const loginForm = page.locator("#loginForm");
+
+    await loginForm.getByLabel("Email", { exact: true }).fill("teacher@example.com");
+    await loginForm.getByLabel("Password", { exact: true }).fill("teacher123");
+    await loginForm.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page).toHaveURL(/#teacher$/);
+    await expect(page.getByRole("heading", { name: /your students/i })).toBeVisible();
+    await expect(primaryNav.getByRole("link", { name: "Teacher" })).toBeVisible();
+    await expect(primaryNav.locator("[data-route='dashboard']")).toBeHidden();
+    await expect(primaryNav.locator("[data-route='admin']")).toBeHidden();
+    await expect(page.locator("#teacherAssignedCount")).not.toHaveText("0");
+    await expect(page.locator("#teacherStudentRows")).toContainText("Lucas");
+
+    await page.goto("/#dashboard");
+    await expect(page).toHaveURL(/#teacher$/);
+  });
+
+  test("student signup through a teacher invite is assigned to that teacher", async ({ page }) => {
+    const primaryNav = page.getByRole("navigation", { name: "Primary" });
+    const unique = Date.now();
+    const invitedName = `Invite Student ${unique}`;
+    const invitedEmail = `invite-student-${unique}@example.com`;
+
+    await page.goto("/?invite=ANA-TEACHER#signup");
+    await expect(page.locator("#signupInviteBanner")).toContainText("Ana Teacher");
+
+    const signupForm = page.locator("#signupForm");
+
+    await signupForm.getByLabel("Full name").fill(invitedName);
+    await signupForm.getByLabel("Email").fill(invitedEmail);
+    await signupForm.getByLabel("Password").fill("invite-demo-password");
+    await signupForm.getByLabel("Native language", { exact: true }).fill("Portuguese");
+    await signupForm.locator("select[name='level']").selectOption({ label: "Beginner" });
+    await signupForm.locator("select[name='goal']").selectOption({ label: "Pronunciation" });
+    await signupForm
+      .locator("select[name='confidence']")
+      .selectOption({ label: "Comfortable with simple phrases" });
+    await signupForm.locator("select[name='studyTime']").selectOption({ label: "20 minutes a day" });
+    await signupForm
+      .getByLabel("Why do you want to learn English?")
+      .fill("I want to improve pronunciation with this teacher.");
+    await signupForm.getByRole("button", { name: "Create student account" }).click();
+
+    await expect(page).toHaveURL(/#dashboard$/);
+    await expect(page.locator("#signupFeedback")).toHaveText(
+      "Student profile saved and assigned to the teacher from the invite link.",
+    );
+
+    await primaryNav.getByRole("button", { name: "Logout" }).click();
+    await primaryNav.getByRole("link", { name: "Login" }).click();
+
+    const loginForm = page.locator("#loginForm");
+
+    await loginForm.getByLabel("Email", { exact: true }).fill("teacher@example.com");
+    await loginForm.getByLabel("Password", { exact: true }).fill("teacher123");
+    await loginForm.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page).toHaveURL(/#teacher$/);
+    await expect(page.locator("#teacherInviteLink")).toHaveValue(/invite=ANA-TEACHER/);
+    await expect(page.locator("#teacherStudentRows")).toContainText(invitedName);
+  });
+
   test("admin can sign in and view the administrative dashboard", async ({ page }) => {
     const primaryNav = page.getByRole("navigation", { name: "Primary" });
     const unique = Date.now();
@@ -228,6 +296,22 @@ test.describe("FluentPath English smoke flow", () => {
     await teacherForm.getByRole("button", { name: "Save teacher" }).click();
     await expect(page.locator("#adminTeacherFeedback")).toHaveText("Record created.");
     await expect(page.locator("#adminTeacherRows")).toContainText("Admin Created Teacher");
+
+    const assignmentForm = page.locator("#adminAssignmentForm");
+    await assignmentForm.scrollIntoViewIfNeeded();
+    await assignmentForm
+      .locator("select[name='studentId']")
+      .selectOption({ label: "Admin Created Student - Unassigned" });
+    await assignmentForm
+      .locator("select[name='teacherId']")
+      .selectOption({ label: "Admin Created Teacher - Pronunciation" });
+    await assignmentForm.getByLabel("Assignment notes").fill("Manual admin assignment.");
+    await assignmentForm.getByRole("button", { name: "Assign teacher" }).click();
+    await expect(page.locator("#adminAssignmentFeedback")).toHaveText(
+      "Student assigned to teacher.",
+    );
+    await expect(page.locator("#adminAssignmentRows")).toContainText("Admin Created Student");
+    await expect(page.locator("#adminAssignmentRows")).toContainText("Admin Created Teacher");
 
     const planForm = page.locator("#adminPlanForm");
     await planForm.scrollIntoViewIfNeeded();

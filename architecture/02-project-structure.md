@@ -61,6 +61,7 @@ english_app/
         auth.js
         index.js
         pronunciation.js
+        teacher.js
     storage/
       index.js
       memory.js

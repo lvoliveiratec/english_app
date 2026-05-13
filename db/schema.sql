@@ -57,11 +57,40 @@ create table if not exists teacher_profiles (
 );
 
 alter table teacher_profiles add column if not exists specialty text;
+alter table student_profiles add column if not exists assignment_status text not null default 'pending_assignment';
 
 create table if not exists admin_profiles (
   user_id uuid primary key references users(id) on delete cascade,
   full_name text not null,
   status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists teacher_student_assignments (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references users(id) on delete cascade,
+  student_id uuid not null references users(id) on delete cascade,
+  status text not null default 'active',
+  source text not null default 'manual',
+  assigned_by_admin_id uuid references users(id) on delete set null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (teacher_id, student_id)
+);
+
+alter table teacher_student_assignments add column if not exists source text not null default 'manual';
+alter table teacher_student_assignments add column if not exists assigned_by_admin_id uuid references users(id) on delete set null;
+
+create table if not exists teacher_invites (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references users(id) on delete cascade,
+  code text not null unique,
+  status text not null default 'active',
+  max_uses integer,
+  used_count integer not null default 0,
+  expires_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

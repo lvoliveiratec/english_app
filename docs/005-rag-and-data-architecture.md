@@ -10,7 +10,9 @@ Core entities:
 
 - `users`: authentication identity, role, locale, status.
 - `student_profiles`: user linkage, English level, goals, profile questionnaire, learning context.
-- `teacher_profiles`: user linkage, specialty, status, future assigned cohorts.
+- `teacher_profiles`: user linkage, specialty, and status.
+- `teacher_student_assignments`: active teacher/student routing, source, admin attribution, notes.
+- `teacher_invites`: teacher-owned invite codes for automatic student assignment during signup.
 - `admin_profiles`: user linkage and admin status.
 - `addresses`: contact/location data tied to users.
 - `courses`: curriculum container.
@@ -95,6 +97,7 @@ For pronunciation attempts, only derived artifacts should enter RAG: transcripts
 - Student-specific RAG memory must never be shared across students.
 - Curriculum content can be global.
 - Teacher-uploaded materials are scoped to teacher, class, course, or institution.
+- Teacher access to student memory and summaries must be constrained by active teacher/student assignments.
 - Raw voice/video should not be sent to model providers unless consent and provider policy allow it.
 - Prefer derived artifacts for AI context: transcripts, pronunciation metrics, and summaries.
 - Maintain audit logs for teacher/admin/media access.

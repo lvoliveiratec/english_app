@@ -22,6 +22,8 @@ Responsibilities:
 
 - Public pages.
 - Student dashboard.
+- Teacher dashboard.
+- Admin assignment management.
 - Lesson player.
 - Forms and validation.
 - Responsive layouts.
@@ -37,6 +39,8 @@ Responsibilities:
 - Authentication.
 - Student, teacher, and admin profiles.
 - Courses, lessons, assignments, and progress.
+- Teacher invite validation.
+- Assignment-scoped teacher access.
 - Media upload authorization.
 - AI request orchestration.
 - Privacy, consent, audit, export, and deletion flows.
@@ -51,6 +55,7 @@ Responsibilities:
 - Migrations.
 - Data integrity.
 - Student progress records.
+- Teacher invite and teacher/student assignment records.
 - Media metadata.
 - Payment and subscription records.
 - Audit events.
@@ -96,10 +101,11 @@ Responsibilities:
 
 ## Human Teacher Surface
 
-Future teacher dashboard responsibilities:
+Current and future teacher dashboard responsibilities:
 
 - See student progress.
 - Review summaries and recurring mistakes.
+- Share invite links for automatic student assignment.
 - Assign lessons.
 - Add notes.
 - Review authorized class recordings or transcripts.

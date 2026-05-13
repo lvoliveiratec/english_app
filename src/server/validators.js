@@ -20,6 +20,10 @@ function normalizeStudentProfile(profile = {}) {
   };
 }
 
+function normalizeInviteCode(code = "") {
+  return code.toString().trim().toUpperCase();
+}
+
 function normalizeAddress(address = {}) {
   return {
     line1: address.line1?.toString().trim() || "",
@@ -77,6 +81,14 @@ function normalizeAdminTeacher(body = {}) {
   };
 }
 
+function normalizeAdminAssignment(body = {}) {
+  return {
+    studentId: body.studentId?.toString().trim() || "",
+    teacherId: body.teacherId?.toString().trim() || "",
+    notes: body.notes?.toString().trim() || "",
+  };
+}
+
 function normalizeAdminPlan(body = {}) {
   return {
     name: body.name?.toString().trim() || "Plan",
@@ -98,12 +110,14 @@ function normalizeAdminCourse(body = {}) {
 }
 
 module.exports = {
+  normalizeAdminAssignment,
   normalizeAdminCourse,
   normalizeAdminPlan,
   normalizeAdminStudent,
   normalizeAdminTeacher,
   normalizeAccount,
   normalizeAddress,
+  normalizeInviteCode,
   normalizePasswordChange,
   normalizePronunciationAttempt,
   normalizeStudentProfile,

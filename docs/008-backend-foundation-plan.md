@@ -52,12 +52,15 @@ POST /api/auth/signup
 POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
+GET  /api/invites/:code
 GET  /api/account
 PUT  /api/account
 PUT  /api/account/password
 POST /api/pronunciation-attempts
+GET  /api/teacher/summary
 GET  /api/admin/summary
 GET  /api/admin/resources
+POST /api/admin/assignments
 POST /api/admin/students
 PUT  /api/admin/students/:id
 POST /api/admin/teachers
@@ -79,6 +82,8 @@ Start with tables that match the current product needs:
 - `student_profiles`
 - `teacher_profiles`
 - `admin_profiles`
+- `teacher_student_assignments`
+- `teacher_invites`
 - `sessions`
 - `courses`
 - `plans`
@@ -93,6 +98,13 @@ Start with tables that match the current product needs:
 
 The current signup profile is now sent to the backend when the app is served through Node. `localStorage["fluentpath:studentProfile"]` remains only as browser session support and static-file fallback state.
 
+Current assignment behavior:
+
+- Students created without an invite start with `student_profiles.assignment_status = pending_assignment`.
+- Students created through a valid teacher invite are assigned immediately.
+- Admins can manually assign or reassign students to teachers through `POST /api/admin/assignments`.
+- Teacher access to student data is limited to active `teacher_student_assignments` rows.
+
 ### 3. Authentication And Roles
 
 Required roles:
@@ -104,8 +116,8 @@ Required roles:
 Minimum behavior:
 
 - Students can access their own profile and progress.
-- Teachers can later access assigned student summaries.
-- Admins can later manage users, courses, policies, and operational records.
+- Teachers can access assigned student summaries.
+- Admins can manage users, courses, plans, and teacher/student assignments.
 
 Passwords must be hashed server-side. The frontend must never store passwords.
 
@@ -176,7 +188,7 @@ RAG rule:
 
 ### 7. Teacher Dashboard
 
-Start after progress and AI feedback are stored.
+Started with assignment-scoped teacher summaries. Expand after progress and AI feedback are stored.
 
 Teacher dashboard should show:
 
@@ -186,6 +198,7 @@ Teacher dashboard should show:
 - Speaking/pronunciation trends.
 - Recent AI feedback.
 - Consent and media processing status.
+- Invite link for automatic student assignment.
 
 ### 8. Privacy, Consent, Retention, And Deletion
 
@@ -207,15 +220,17 @@ Build only this first:
 - API server. Started.
 - Database connection. Started.
 - Migrations. Started.
-- `users`, `student_profiles`, `teacher_profiles`, `admin_profiles`, `sessions`, `addresses`, `plans`, `payments`, and `pronunciation_attempts`. Started.
+- `users`, `student_profiles`, `teacher_profiles`, `admin_profiles`, `sessions`, `addresses`, `plans`, `payments`, `teacher_student_assignments`, `teacher_invites`, and `pronunciation_attempts`. Started.
 - Student signup/login/logout. Started.
 - Account/profile update endpoint. Started.
 - Frontend connected to auth, signup, account, admin, and pronunciation-attempt endpoints. Started.
 - Admin summary endpoint and first admin dashboard. Started.
 - Admin management for students, teachers, plans, and courses. Started.
+- Admin assignment management. Started.
+- Teacher dashboard and invite link flow. Started.
 - Docker Compose PostgreSQL development environment. Started.
 
-Keep media upload, transcription, AI feedback, and teacher dashboards as later milestones.
+Keep media upload, transcription, and AI feedback as later milestones.
 
 ## Immediate Next Backend Tasks
 
@@ -224,6 +239,5 @@ Keep media upload, transcription, AI feedback, and teacher dashboards as later m
 - Add authorized media upload records and object-storage integration.
 - Add transcription job records for pronunciation attempts.
 - Expand server-side role checks into permission scopes and audit logs.
-- Add teacher assignment tables before building the teacher dashboard.
 - Add admin payment management endpoints.
 - Add admin policy/consent management endpoints.

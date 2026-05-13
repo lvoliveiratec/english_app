@@ -18,6 +18,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -28,6 +29,7 @@ body {
     radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.14), transparent 28rem),
     linear-gradient(135deg, #f8fafc 0%, #eef4f1 52%, #fff8ee 100%);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -42,6 +44,8 @@ input {
 
 .app-shell {
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .topbar {
@@ -376,6 +380,7 @@ input {
 
 .section-wrap {
   width: min(1180px, calc(100% - 2rem));
+  max-width: calc(100vw - 2rem);
   margin: 0 auto;
   padding: clamp(2rem, 5vw, 4rem) 0;
 }
@@ -602,6 +607,27 @@ input {
   margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.invite-banner {
+  margin-top: 1.2rem;
+  border: 1px solid #bfe7d7;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #eef9f5;
+}
+
+.invite-banner strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 1.05rem;
+}
+
+.invite-banner p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.96rem;
   line-height: 1.5;
 }
 
@@ -929,6 +955,62 @@ blockquote {
   align-items: start;
 }
 
+.teacher-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.36fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.teacher-workspace {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.teacher-brief h1 {
+  max-width: 12ch;
+}
+
+.teacher-brief .pill {
+  margin-top: 1rem;
+}
+
+.teacher-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+}
+
+#teacher .section-heading h1 {
+  max-width: 18ch;
+}
+
+.teacher-invite-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.invite-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+}
+
+.invite-link-row input {
+  min-height: 2.85rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.teacher-overview-grid > *,
+.teacher-grid > *,
+.admin-grid > * {
+  min-width: 0;
+}
+
 .account-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
@@ -937,6 +1019,8 @@ blockquote {
 }
 
 .admin-table-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
 }
 
@@ -1001,6 +1085,12 @@ blockquote {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.admin-assignment-panel {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
 }
 
 .admin-manager {
@@ -1108,6 +1198,8 @@ button:disabled {
   .lesson-grid,
   .admin-metric-grid,
   .admin-grid,
+  .teacher-overview-grid,
+  .teacher-grid,
   .admin-management-grid,
   .account-grid,
   .phrase-study {
@@ -1118,6 +1210,40 @@ button:disabled {
   .auth-layout,
   .signup-layout {
     min-height: auto;
+  }
+
+  #teacher .section-wrap {
+    width: min(100% - 1.5rem, 44rem);
+    max-width: calc(100vw - 1.5rem);
+    padding-top: 1.65rem;
+  }
+
+  #teacher .section-heading {
+    margin-bottom: 1rem;
+  }
+
+  #teacher .section-heading h1 {
+    max-width: 18ch;
+    font-size: clamp(1.9rem, 8vw, 2.35rem);
+    line-height: 1.08;
+  }
+
+  #teacher .admin-storage-note {
+    max-width: 100%;
+    font-size: 0.98rem;
+  }
+
+  #teacher .teacher-brief h1 {
+    max-width: 100%;
+    font-size: clamp(1.8rem, 7vw, 2.25rem);
+    line-height: 1.12;
+  }
+
+  #teacher .teacher-brief p {
+    max-width: 100%;
+    font-size: 1rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
   }
 
   .student-brief {
@@ -1162,6 +1288,37 @@ button:disabled {
 
   .two-columns,
   .checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #teacher .section-wrap {
+    width: min(100% - 1.25rem, 36rem);
+    max-width: calc(100vw - 1.25rem);
+  }
+
+  #teacher .workspace-panel,
+  #teacher .student-brief,
+  #teacher .metric-card {
+    padding: 0.95rem;
+  }
+
+  #teacher .section-heading h1 {
+    font-size: clamp(1.8rem, 8.5vw, 2.2rem);
+  }
+
+  #teacher .teacher-brief h1 {
+    font-size: clamp(1.7rem, 8vw, 2.05rem);
+  }
+
+  #teacher .admin-metric-grid {
+    gap: 0.75rem;
+  }
+
+  #teacher .admin-table {
+    min-width: 42rem;
+  }
+
+  .invite-link-row {
     grid-template-columns: 1fr;
   }
 }

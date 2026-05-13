@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=teacher-mobile-layout" />
   </head>
   <body>
     <div class="app-shell">
@@ -25,6 +25,7 @@
           <a href="#coach" data-route="coach">AI Coach</a>
           <a href="#dashboard" data-route="dashboard" data-student-nav hidden>Dashboard</a>
           <a href="#lessons" data-route="lessons" data-student-nav hidden>Lessons</a>
+          <a href="#teacher" data-route="teacher" id="teacherNavLink" hidden>Teacher</a>
           <a href="#admin" data-route="admin" id="adminNavLink" hidden>Admin</a>
           <a href="#account" data-route="account" id="accountNavLink" hidden>Account</a>
           <a href="#login" data-route="login" id="loginNavLink">Login</a>
@@ -206,8 +207,16 @@
                 current English level, goals, interests, and conversation topics the student already
                 cares about.
               </p>
+              <div class="invite-banner" id="signupInviteBanner" hidden>
+                <p class="eyebrow">Teacher invite</p>
+                <strong id="signupInviteTitle">Joining a teacher workspace</strong>
+                <p id="signupInviteText">
+                  This account will be assigned to the teacher who shared the invite link.
+                </p>
+              </div>
             </div>
             <form class="login-box signup-form" id="signupForm">
+              <input type="hidden" name="inviteCode" id="signupInviteCode" />
               <div class="form-grid two-columns">
                 <label>
                   Full name
@@ -624,6 +633,132 @@
           </div>
         </section>
 
+        <section class="page" id="teacher" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Teacher dashboard</p>
+                <h1>Your students, summaries, and next teaching actions.</h1>
+                <p class="admin-storage-note" id="teacherPersistenceNote">
+                  Checking teacher workspace...
+                </p>
+              </div>
+              <button class="secondary-action" type="button" id="refreshTeacherButton">
+                Refresh
+              </button>
+            </div>
+
+            <div class="teacher-overview-grid">
+              <aside class="student-brief teacher-brief">
+                <p class="eyebrow">Teacher summary</p>
+                <h1 id="teacherGreeting">Hi, Teacher.</h1>
+                <p id="teacherBriefText">
+                  Your assigned students and next actions will load after sign in.
+                </p>
+                <span class="pill" id="teacherStorageBadge">Backend</span>
+              </aside>
+
+              <div class="teacher-workspace">
+                <div class="admin-metric-grid" aria-label="Teacher metrics">
+                  <article class="metric-card">
+                    <span>Assigned students</span>
+                    <strong id="teacherAssignedCount">0</strong>
+                  </article>
+                  <article class="metric-card">
+                    <span>Need attention</span>
+                    <strong id="teacherAttentionCount">0</strong>
+                  </article>
+                  <article class="metric-card">
+                    <span>Pending summaries</span>
+                    <strong id="teacherPendingSummaries">0</strong>
+                  </article>
+                  <article class="metric-card">
+                    <span>Active students</span>
+                    <strong id="teacherActiveClasses">0</strong>
+                  </article>
+                </div>
+
+                <div class="admin-grid teacher-grid">
+                  <section class="workspace-panel">
+                    <div class="panel-heading">
+                      <div>
+                        <p class="eyebrow">Assigned students</p>
+                        <h2>Progress and next class focus</h2>
+                      </div>
+                      <span class="pill">Permissioned</span>
+                    </div>
+                    <div class="admin-table-wrap">
+                      <table class="admin-table">
+                        <thead>
+                          <tr>
+                            <th>Student</th>
+                            <th>Level</th>
+                            <th>Goal</th>
+                            <th>Progress</th>
+                            <th>Focus</th>
+                            <th>Next action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="teacherStudentRows">
+                          <tr>
+                            <td colspan="6">Loading teacher summary...</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <section class="workspace-panel">
+                    <div class="panel-heading">
+                      <div>
+                        <p class="eyebrow">Teacher Summary Agent</p>
+                        <h2>Suggested actions</h2>
+                      </div>
+                      <span class="pill warning">Prototype</span>
+                    </div>
+                    <ul class="activity-list" id="teacherActionList">
+                      <li>Loading next actions...</li>
+                    </ul>
+                  </section>
+                </div>
+
+                <section class="workspace-panel teacher-invite-panel">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Invite link</p>
+                      <h2>Share your signup link</h2>
+                    </div>
+                    <span class="pill">Auto-assign</span>
+                  </div>
+                  <div class="invite-link-row">
+                    <input type="text" id="teacherInviteLink" readonly />
+                    <button class="secondary-action" type="button" id="copyTeacherInviteButton">
+                      Copy link
+                    </button>
+                  </div>
+                  <p class="feedback-text" id="teacherInviteFeedback">
+                    Students who create an account through this link will be assigned to you.
+                  </p>
+                </section>
+
+                <section class="workspace-panel">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">Privacy boundary</p>
+                      <h2>Student access is assignment-based</h2>
+                    </div>
+                    <span class="pill warning">Sensitive</span>
+                  </div>
+                  <p class="feedback-text">
+                    Teachers should only see students assigned to them. Class media and transcripts
+                    stay unavailable until consent, retention, and deletion workflows are complete.
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="page" id="lessons" data-page>
           <div class="section-wrap">
             <div class="section-heading courses-heading">
@@ -810,6 +945,60 @@
               </section>
             </div>
 
+            <section class="workspace-panel admin-assignment-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Teacher assignment</p>
+                  <h2>Assign students to teachers</h2>
+                </div>
+                <span class="pill">Manual routing</span>
+              </div>
+              <form class="admin-form" id="adminAssignmentForm">
+                <div class="form-grid two-columns">
+                  <label>
+                    Student
+                    <select name="studentId" required>
+                      <option value="">Choose a student</option>
+                    </select>
+                  </label>
+                  <label>
+                    Teacher
+                    <select name="teacherId" required>
+                      <option value="">Choose a teacher</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Assignment notes
+                  <textarea
+                    name="notes"
+                    rows="3"
+                    placeholder="Reason, class fit, schedule, or focus area."
+                  ></textarea>
+                </label>
+                <button class="primary-action" type="submit">Assign teacher</button>
+                <p class="feedback-text" id="adminAssignmentFeedback"></p>
+              </form>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Teacher</th>
+                      <th>Source</th>
+                      <th>Notes</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminAssignmentRows">
+                    <tr>
+                      <td colspan="5">Loading teacher assignments...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
             <div class="admin-management-grid">
               <section class="workspace-panel admin-manager">
                 <div class="panel-heading">
@@ -879,6 +1068,7 @@
                         <th>Email</th>
                         <th>Level</th>
                         <th>Goal</th>
+                        <th>Teacher</th>
                         <th></th>
                       </tr>
                     </thead>

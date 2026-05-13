@@ -16,6 +16,9 @@
 - In-memory fallback storage for local development without PostgreSQL.
 - Initial admin dashboard prototype.
 - Admin management modules for students, teachers, plans/prices, and courses.
+- Teacher dashboard with assigned students, summary metrics, and invite link sharing.
+- Teacher invite links for automatic student assignment during signup.
+- Admin manual assignment workflow for assigning or reassigning students to teachers.
 - Backend modules split under `src/server/`.
 - Dockerfile for Cloud Run style deployment experiments.
 - Docker Compose PostgreSQL service for local database development.
@@ -32,7 +35,8 @@
 - Store lesson progress and placement data in the database.
 - Move remaining `localStorage` state into server-side storage.
 - Add update endpoints for student profiles and progress.
-- Add teacher-facing APIs.
+- Add teacher-facing APIs. Started with teacher summary.
+- Add teacher/student assignment APIs. Started with admin assignment creation and invite-based assignment.
 - Add remaining admin management actions for payments, consent, retention, deletion, and policies.
 - Create secure upload records for authorized audio/video.
 - Split the frontend into modules or migrate to React + TypeScript before adding many more screens.
@@ -44,6 +48,9 @@ Suggested first backend milestone:
 - Add endpoints for student signup, login, logout, and current user. Started.
 - Add admin summary endpoint. Started.
 - Add admin resources/create/update endpoints for students, teachers, plans, and courses. Started.
+- Add teacher summary endpoint. Started.
+- Add teacher invite lookup endpoint. Started.
+- Add admin assignment endpoint. Started.
 - Add profile retrieval/update endpoints. Started with Account.
 - Add pronunciation attempt records. Started with metadata only.
 - Keep audio/video upload out of scope until authentication, consent, and ownership are working.

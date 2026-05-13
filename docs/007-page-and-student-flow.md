@@ -68,10 +68,12 @@ Purpose:
   - Work and business
 - Collect free-text context: favorite media, hobbies, foods/drinks, sports, and motivation.
 - Save the profile through the backend when available, with local fallback for static previews.
+- Support teacher invite links. When a signup link includes a valid invite code, the new student is assigned to that teacher automatically.
 
 Important current rule:
 
 - The password field is not stored in the local profile.
+- Students who sign up without a teacher invite start as `pending_assignment` and can be routed by an admin.
 
 ## Student Pages After Login
 
@@ -143,6 +145,7 @@ Purpose:
 - Show recent operational activity.
 - Register and update students.
 - Register and update teachers.
+- Assign or reassign students to teachers.
 - Create and update plans/prices.
 - Create and update courses.
 - Prepare space for future payment management, consent review, retention policy, and deletion workflows.
@@ -154,13 +157,64 @@ Current access:
 - In-memory development storage includes `admin@example.com` / `admin123`.
 - Production still needs fuller admin permission scopes and audit logging.
 
+## Teacher Pages
+
+### Teacher Dashboard
+
+Purpose:
+
+- Give teachers a first operational view of their assigned students.
+- Show assigned student count, students needing attention, pending summaries, and active students.
+- Show student level, goal, current progress, difficulty, and recommended next action.
+- Show suggested teaching actions from the future Teacher Summary Agent surface.
+- Provide a teacher invite link. Students who sign up through that link are automatically assigned to that teacher.
+
+Current access:
+
+- The client only shows Teacher navigation for users with role `teacher`.
+- Teacher APIs require an authenticated teacher session.
+- Teacher student visibility is based on active rows in `teacher_student_assignments`.
+
+## Assignment Flow
+
+### Normal Signup
+
+```text
+Student opens Create Account
+  -> creates account
+  -> student_profiles.assignment_status = pending_assignment
+  -> Admin dashboard can assign the student to a teacher
+```
+
+### Teacher Invite Signup
+
+```text
+Teacher shares invite link
+  -> student opens ?invite=CODE#signup
+  -> backend validates teacher_invites.code
+  -> student account is created
+  -> teacher_student_assignments row is created
+  -> student_profiles.assignment_status = assigned
+```
+
+### Admin Manual Assignment
+
+```text
+Admin Dashboard
+  -> Teacher assignment panel
+  -> choose student
+  -> choose teacher
+  -> add notes
+  -> save active assignment
+```
+
+When an admin reassigns a student, previous active assignments for that student are marked inactive and the new teacher becomes the active teacher.
+
 ## Next Product Steps
 
-- Create the backend foundation for real users, roles, sessions, and profiles.
-- Add database storage for the student profile currently held in `localStorage`.
-- Add backend-backed login, logout, and signup.
+- Store placement/baseline data server-side.
 - Add a real onboarding/placement assessment flow connected to the student profile.
 - Add lesson player screens for each skill.
-- Expand teacher/admin roles after the user/profile foundation is stable.
 - Connect dashboard and lessons to backend data.
 - Connect AI Teacher responses to RAG and student memory.
+- Add payment, consent, retention, and deletion workflows to Admin.

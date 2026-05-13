@@ -5,10 +5,15 @@ const nav = document.querySelector(".nav-links");
 const loginForm = document.querySelector("#loginForm");
 const signupForm = document.querySelector("#signupForm");
 const signupFeedback = document.querySelector("#signupFeedback");
+const signupInviteBanner = document.querySelector("#signupInviteBanner");
+const signupInviteTitle = document.querySelector("#signupInviteTitle");
+const signupInviteText = document.querySelector("#signupInviteText");
+const signupInviteCode = document.querySelector("#signupInviteCode");
 const loginFeedback = document.querySelector("#loginFeedback");
 const loginNavLink = document.querySelector("#loginNavLink");
 const logoutButton = document.querySelector("#logoutButton");
 const adminNavLink = document.querySelector("#adminNavLink");
+const teacherNavLink = document.querySelector("#teacherNavLink");
 const accountNavLink = document.querySelector("#accountNavLink");
 const courseGrid = document.querySelector("#courseGrid");
 const lessonGrid = document.querySelector("#lessonGrid");
@@ -45,6 +50,20 @@ const stopClassButton = document.querySelector("#stopClassButton");
 const classPreview = document.querySelector("#classPreview");
 const classFeedback = document.querySelector("#classFeedback");
 const refreshAdminButton = document.querySelector("#refreshAdminButton");
+const refreshTeacherButton = document.querySelector("#refreshTeacherButton");
+const teacherGreeting = document.querySelector("#teacherGreeting");
+const teacherBriefText = document.querySelector("#teacherBriefText");
+const teacherAssignedCount = document.querySelector("#teacherAssignedCount");
+const teacherAttentionCount = document.querySelector("#teacherAttentionCount");
+const teacherPendingSummaries = document.querySelector("#teacherPendingSummaries");
+const teacherActiveClasses = document.querySelector("#teacherActiveClasses");
+const teacherStorageBadge = document.querySelector("#teacherStorageBadge");
+const teacherPersistenceNote = document.querySelector("#teacherPersistenceNote");
+const teacherStudentRows = document.querySelector("#teacherStudentRows");
+const teacherActionList = document.querySelector("#teacherActionList");
+const teacherInviteLink = document.querySelector("#teacherInviteLink");
+const copyTeacherInviteButton = document.querySelector("#copyTeacherInviteButton");
+const teacherInviteFeedback = document.querySelector("#teacherInviteFeedback");
 const adminStudentsCount = document.querySelector("#adminStudentsCount");
 const adminTeachersCount = document.querySelector("#adminTeachersCount");
 const adminAdminsCount = document.querySelector("#adminAdminsCount");
@@ -59,14 +78,17 @@ const adminStudentForm = document.querySelector("#adminStudentForm");
 const adminTeacherForm = document.querySelector("#adminTeacherForm");
 const adminPlanForm = document.querySelector("#adminPlanForm");
 const adminCourseForm = document.querySelector("#adminCourseForm");
+const adminAssignmentForm = document.querySelector("#adminAssignmentForm");
 const adminStudentRows = document.querySelector("#adminStudentRows");
 const adminTeacherRows = document.querySelector("#adminTeacherRows");
 const adminPlanRows = document.querySelector("#adminPlanRows");
 const adminCourseRows = document.querySelector("#adminCourseRows");
+const adminAssignmentRows = document.querySelector("#adminAssignmentRows");
 const adminStudentFeedback = document.querySelector("#adminStudentFeedback");
 const adminTeacherFeedback = document.querySelector("#adminTeacherFeedback");
 const adminPlanFeedback = document.querySelector("#adminPlanFeedback");
 const adminCourseFeedback = document.querySelector("#adminCourseFeedback");
+const adminAssignmentFeedback = document.querySelector("#adminAssignmentFeedback");
 const accountForm = document.querySelector("#accountForm");
 const passwordForm = document.querySelector("#passwordForm");
 const accountFeedback = document.querySelector("#accountFeedback");
@@ -209,6 +231,18 @@ function readStoredStudentProfile() {
   }
 }
 
+function readStoredTeacherProfile() {
+  try {
+    return JSON.parse(localStorage.getItem("fluentpath:teacherProfile")) || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function readStoredInviteCode() {
+  return sessionStorage.getItem("fluentpath:inviteCode") || "";
+}
+
 function readStoredPlacement() {
   try {
     return JSON.parse(localStorage.getItem("fluentpath:placement")) || null;
@@ -227,6 +261,8 @@ function readStoredAddress() {
 
 const state = {
   studentProfile: readStoredStudentProfile(),
+  teacherProfile: readStoredTeacherProfile(),
+  inviteCode: readStoredInviteCode(),
   placement: readStoredPlacement(),
   userName: localStorage.getItem("fluentpath:user") || "Student",
   userEmail: localStorage.getItem("fluentpath:email") || "",
@@ -244,14 +280,40 @@ const state = {
 const adminState = {
   students: [],
   teachers: [],
+  assignments: [],
   plans: [],
   courses: [],
 };
 
-const protectedRoutes = ["dashboard", "lessons", "admin", "account"];
+const protectedRoutes = ["dashboard", "lessons", "admin", "account", "teacher"];
+const studentOnlyRoutes = ["dashboard", "lessons"];
+
+function isStudent() {
+  return state.isSignedIn && state.userRole === "student";
+}
 
 function isAdmin() {
   return state.isSignedIn && state.userRole === "admin";
+}
+
+function isTeacher() {
+  return state.isSignedIn && state.userRole === "teacher";
+}
+
+function getDefaultRouteForRole() {
+  if (isAdmin()) {
+    return "admin";
+  }
+
+  if (isTeacher()) {
+    return "teacher";
+  }
+
+  if (isStudent()) {
+    return "dashboard";
+  }
+
+  return "home";
 }
 
 function getSafeRoute(routeName) {
@@ -262,8 +324,16 @@ function getSafeRoute(routeName) {
     return "login";
   }
 
+  if (studentOnlyRoutes.includes(requestedRoute) && !isStudent()) {
+    return getDefaultRouteForRole();
+  }
+
   if (requestedRoute === "admin" && !isAdmin()) {
-    return "dashboard";
+    return getDefaultRouteForRole();
+  }
+
+  if (requestedRoute === "teacher" && !isTeacher()) {
+    return getDefaultRouteForRole();
   }
 
   return requestedRoute;
@@ -291,8 +361,16 @@ function setRoute(routeName) {
     renderAdminSummary();
   }
 
+  if (safeRoute === "teacher") {
+    renderTeacherSummary();
+  }
+
   if (safeRoute === "account") {
     fillAccountForm();
+  }
+
+  if (safeRoute === "signup") {
+    renderSignupInvite();
   }
 
   if (safeRoute === "dashboard") {
@@ -310,6 +388,7 @@ function navigateTo(routeName) {
 }
 
 function handleRouteChange() {
+  captureInviteFromUrl();
   const requestedRoute = window.location.hash.replace("#", "") || "home";
   const safeRoute = getSafeRoute(requestedRoute);
 
@@ -319,6 +398,25 @@ function handleRouteChange() {
   }
 
   setRoute(safeRoute);
+}
+
+function normalizeInviteCode(code = "") {
+  return code.toString().trim().toUpperCase();
+}
+
+function captureInviteFromUrl() {
+  const inviteCode = normalizeInviteCode(new URLSearchParams(window.location.search).get("invite") || "");
+
+  if (!inviteCode) {
+    return;
+  }
+
+  state.inviteCode = inviteCode;
+  sessionStorage.setItem("fluentpath:inviteCode", inviteCode);
+
+  if (signupInviteCode) {
+    signupInviteCode.value = inviteCode;
+  }
 }
 
 function renderCourses() {
@@ -392,6 +490,48 @@ async function apiRequest(path, options = {}) {
   return payload;
 }
 
+async function renderSignupInvite() {
+  const code = normalizeInviteCode(state.inviteCode || readStoredInviteCode());
+
+  if (!code) {
+    signupInviteBanner.hidden = true;
+    signupInviteCode.value = "";
+    return;
+  }
+
+  state.inviteCode = code;
+  signupInviteCode.value = code;
+  signupInviteBanner.hidden = false;
+  signupInviteTitle.textContent = "Joining a teacher workspace";
+  signupInviteText.textContent =
+    "This account will be assigned to the teacher who shared the invite link.";
+
+  try {
+    const invite = await apiRequest(`/api/invites/${encodeURIComponent(code)}`);
+    const teacher = invite.teacher || {};
+    signupInviteTitle.textContent = `Joining ${teacher.fullName || "your teacher"}'s class`;
+    signupInviteText.textContent = `${
+      teacher.specialty || "English"
+    } teacher. After signup, this student account will be assigned automatically.`;
+  } catch (error) {
+    if (!shouldUseLocalFallback(error)) {
+      signupInviteText.textContent = error.message;
+      return;
+    }
+
+    signupInviteTitle.textContent = "Joining Ana Teacher's class";
+    signupInviteText.textContent =
+      "Pronunciation teacher. After signup, this student account will be assigned automatically.";
+  }
+}
+
+function buildTeacherInviteUrl(code) {
+  const url = new URL(window.location.href);
+  url.search = `?invite=${encodeURIComponent(code)}`;
+  url.hash = "signup";
+  return url.toString();
+}
+
 function applySessionPayload(payload) {
   const user = payload.user || {};
   const profile = payload.profile
@@ -413,6 +553,7 @@ function applySessionPayload(payload) {
   state.userPhone = user.phone || profile?.phone || "";
   state.userRole = user.role || "student";
   state.studentProfile = state.userRole === "student" ? profile : null;
+  state.teacherProfile = state.userRole === "teacher" ? profile : null;
   state.address = address;
   state.placement = readStoredPlacement();
   state.isSignedIn = true;
@@ -424,7 +565,9 @@ function applySessionPayload(payload) {
   localStorage.setItem("fluentpath:signedIn", "true");
 
   if (profile) {
-    localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
+    const profileStorageKey =
+      state.userRole === "teacher" ? "fluentpath:teacherProfile" : "fluentpath:studentProfile";
+    localStorage.setItem(profileStorageKey, JSON.stringify(profile));
   }
 
   if (state.address) {
@@ -481,9 +624,17 @@ function refreshSessionCopy() {
 
   if (state.isSignedIn) {
     homeCoachGreeting.textContent = `Hi, ${state.userName}. Good to see you here!`;
-    homeCoachSummary.innerHTML = profile
-      ? `Your AI Teacher will start with ${profileLevel} English, focus on ${profileGoal}, and use topics like <strong>${firstInterest || "your interests"}</strong> to make practice feel more natural.`
-      : "Yesterday you improved your past-tense answers. Today we will practice real conversation, review <strong>thought</strong>, and build a short answer you can use at work.";
+    if (isTeacher()) {
+      homeCoachSummary.textContent =
+        "Your teacher workspace is ready with assigned students, progress summaries, and next teaching actions.";
+    } else if (isAdmin()) {
+      homeCoachSummary.textContent =
+        "Your administrative workspace is ready for school operations, people, plans, and courses.";
+    } else {
+      homeCoachSummary.innerHTML = profile
+        ? `Your AI Teacher will start with ${profileLevel} English, focus on ${profileGoal}, and use topics like <strong>${firstInterest || "your interests"}</strong> to make practice feel more natural.`
+        : "Yesterday you improved your past-tense answers. Today we will practice real conversation, review <strong>thought</strong>, and build a short answer you can use at work.";
+    }
   } else {
     homeCoachGreeting.textContent = "Your AI Teacher is ready to help.";
     homeCoachSummary.textContent =
@@ -495,11 +646,12 @@ function refreshSessionCopy() {
     ? `Good to see you here, ${state.userName}. Your profile says your level is ${profileLevel}, your main goal is ${profileGoal}, and you enjoy ${interests.join(", ") || "personalized topics"}. Today the AI Teacher will use those signals to shape your first practice.`
     : `Good to see you here, ${state.userName}. Yesterday you studied for 28 minutes and completed 3 activities. Today the focus is pronunciation, listening, and confidence in short conversations.`;
   studentNavLinks.forEach((link) => {
-    link.hidden = !state.isSignedIn;
+    link.hidden = !isStudent();
   });
   loginNavLink.hidden = state.isSignedIn;
   logoutButton.hidden = !state.isSignedIn;
   adminNavLink.hidden = !isAdmin();
+  teacherNavLink.hidden = !isTeacher();
   accountNavLink.hidden = !state.isSignedIn;
   renderProgressMetrics();
 }
@@ -604,6 +756,18 @@ function shouldUseLocalFallback(error) {
   return window.location.protocol === "file:";
 }
 
+function getLocalFallbackRole(email) {
+  if (email === "admin@example.com") {
+    return "admin";
+  }
+
+  if (email === "teacher@example.com") {
+    return "teacher";
+  }
+
+  return "student";
+}
+
 async function signOut() {
   try {
     await apiRequest("/api/auth/logout", { method: "POST", body: "{}" });
@@ -616,6 +780,7 @@ async function signOut() {
   state.userEmail = "";
   state.userPhone = "";
   state.studentProfile = null;
+  state.teacherProfile = null;
   state.address = null;
   state.placement = null;
   state.isSignedIn = false;
@@ -625,6 +790,7 @@ async function signOut() {
   localStorage.removeItem("fluentpath:role");
   localStorage.removeItem("fluentpath:signedIn");
   localStorage.removeItem("fluentpath:studentProfile");
+  localStorage.removeItem("fluentpath:teacherProfile");
   localStorage.removeItem("fluentpath:address");
   localStorage.removeItem("fluentpath:placement");
   refreshSessionCopy();
@@ -646,6 +812,129 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function getLocalTeacherSummary() {
+  const storedProfile = readStoredStudentProfile();
+  const assignedStudents = [
+    {
+      studentId: "local-student",
+      studentName: storedProfile?.fullName || "Lucas",
+      level: storedProfile?.level || "Beginner",
+      goal: storedProfile?.goal || "Daily conversation",
+      completion: state.placement?.metrics?.fluency || 64,
+      difficulty: "word endings",
+      recommendation: "Practice final consonants and short conversation answers.",
+      notes: "Local preview assignment.",
+    },
+  ];
+
+  return {
+    storage: "local",
+    teacher: {
+      fullName: state.teacherProfile?.fullName || state.userName || "Teacher",
+      specialty: state.teacherProfile?.specialty || "Pronunciation",
+      status: state.teacherProfile?.status || "active",
+    },
+    invite: {
+      code: "ANA-TEACHER",
+      status: "active",
+      usedCount: 0,
+      maxUses: null,
+      expiresAt: null,
+    },
+    totals: {
+      assignedStudents: assignedStudents.length,
+      activeStudents: assignedStudents.length,
+      studentsNeedingAttention: assignedStudents.filter((student) => student.completion < 70).length,
+      pendingSummaries: assignedStudents.filter((student) => student.completion < 70).length,
+    },
+    assignedStudents,
+    nextActions: [
+      "Review students with completion below 70%.",
+      "Prepare one short speaking correction for the next class.",
+      "Confirm consent before any class recording.",
+    ],
+  };
+}
+
+async function renderTeacherSummary() {
+  try {
+    const summary = await apiRequest("/api/teacher/summary");
+    updateTeacherSummary(summary);
+  } catch (error) {
+    if (!shouldUseLocalFallback(error)) {
+      updateTeacherError(error);
+      return;
+    }
+
+    updateTeacherSummary(getLocalTeacherSummary());
+  }
+}
+
+function updateTeacherError(error) {
+  teacherGreeting.textContent = `Hi, ${state.userName}.`;
+  teacherBriefText.textContent =
+    "Teacher data could not be loaded. Sign in again or check the server connection.";
+  teacherAssignedCount.textContent = "-";
+  teacherAttentionCount.textContent = "-";
+  teacherPendingSummaries.textContent = "-";
+  teacherActiveClasses.textContent = "-";
+  teacherStorageBadge.textContent = "API error";
+  teacherPersistenceNote.textContent = `Could not load teacher data from the backend: ${error.message}`;
+  teacherStudentRows.innerHTML = `<tr><td colspan="6">Teacher summary is unavailable.</td></tr>`;
+  teacherActionList.innerHTML = "<li>Teacher API request failed.</li>";
+  teacherInviteLink.value = "";
+  teacherInviteFeedback.textContent = "Invite link is unavailable until teacher data loads.";
+}
+
+function updateTeacherSummary(summary) {
+  const storageLabels = {
+    postgres: "PostgreSQL",
+    memory: "Memory session",
+    local: "Local browser",
+  };
+  const teacher = summary.teacher || {};
+
+  teacherGreeting.textContent = `Hi, ${teacher.fullName || state.userName}.`;
+  teacherBriefText.textContent = `${teacher.specialty || "General English"} teacher, status ${
+    teacher.status || "active"
+  }. This workspace only shows students assigned to this teacher.`;
+  teacherAssignedCount.textContent = summary.totals.assignedStudents;
+  teacherAttentionCount.textContent = summary.totals.studentsNeedingAttention;
+  teacherPendingSummaries.textContent = summary.totals.pendingSummaries;
+  teacherActiveClasses.textContent = summary.totals.activeStudents;
+  teacherStorageBadge.textContent = storageLabels[summary.storage] || "Unknown";
+  teacherPersistenceNote.textContent =
+    summary.storage === "postgres"
+      ? "Teacher data is loaded from PostgreSQL with student access limited by assignments."
+      : "Teacher data is using prototype storage. PostgreSQL can persist assignments and summaries.";
+  const inviteCode = summary.invite?.code || "";
+  teacherInviteLink.value = inviteCode ? buildTeacherInviteUrl(inviteCode) : "";
+  teacherInviteFeedback.textContent = inviteCode
+    ? `Invite code ${inviteCode}. Students who use this link will be assigned to this teacher.`
+    : "Invite link is not available for this teacher yet.";
+
+  teacherStudentRows.innerHTML = summary.assignedStudents.length
+    ? summary.assignedStudents
+        .map(
+          (student) => `
+            <tr>
+              <td>${escapeHtml(student.studentName)}</td>
+              <td>${escapeHtml(student.level)}</td>
+              <td>${escapeHtml(student.goal)}</td>
+              <td>${escapeHtml(student.completion)}%</td>
+              <td>${escapeHtml(student.difficulty)}</td>
+              <td>${escapeHtml(student.recommendation)}</td>
+            </tr>
+          `,
+        )
+        .join("")
+    : `<tr><td colspan="6">No students assigned to this teacher yet.</td></tr>`;
+
+  teacherActionList.innerHTML = summary.nextActions
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
 }
 
 function getLocalAdminSummary() {
@@ -705,7 +994,7 @@ function updateAdminError(error) {
   adminPersistenceNote.textContent = `Could not load admin data from the backend: ${error.message}`;
   adminProgressRows.innerHTML = `<tr><td colspan="6">Backend admin data is unavailable. Sign in again or check the server connection.</td></tr>`;
   adminActivityList.innerHTML = "<li>Admin API request failed.</li>";
-  updateAdminResources({ students: [], teachers: [], plans: [], courses: [] });
+  updateAdminResources({ students: [], teachers: [], assignments: [], plans: [], courses: [] });
 }
 
 function updateAdminSummary(summary) {
@@ -766,11 +1055,15 @@ function getLocalAdminResources() {
             fullName: profile.fullName,
             level: profile.level,
             goal: profile.goal,
+            assignmentStatus: "pending_assignment",
+            teacherId: "",
+            teacherName: "",
             status: "active",
           },
         ]
       : [],
     teachers: [],
+    assignments: [],
     plans: [],
     courses: [],
   };
@@ -790,14 +1083,22 @@ async function renderAdminResources() {
 function updateAdminResources(resources) {
   adminState.students = resources.students || [];
   adminState.teachers = resources.teachers || [];
+  adminState.assignments = resources.assignments || [];
   adminState.plans = resources.plans || [];
   adminState.courses = resources.courses || [];
+  renderAdminAssignmentOptions();
 
   adminStudentRows.innerHTML = renderRows(
     adminState.students,
     "students",
-    (item) => [item.fullName, item.email, item.level, item.goal],
-    5,
+    (item) => [
+      item.fullName,
+      item.email,
+      item.level,
+      item.goal,
+      item.teacherName || "Unassigned",
+    ],
+    6,
   );
   adminTeacherRows.innerHTML = renderRows(
     adminState.teachers,
@@ -817,6 +1118,54 @@ function updateAdminResources(resources) {
     (item) => [item.title, item.level || "-", item.duration || "-", item.status],
     5,
   );
+  adminAssignmentRows.innerHTML = renderAssignmentRows();
+}
+
+function renderAdminAssignmentOptions() {
+  const studentOptions = adminState.students
+    .map((student) => {
+      const status = student.teacherName ? `Assigned to ${student.teacherName}` : "Unassigned";
+      return `<option value="${escapeHtml(student.id)}">${escapeHtml(student.fullName)} - ${escapeHtml(status)}</option>`;
+    })
+    .join("");
+  const teacherOptions = adminState.teachers
+    .map(
+      (teacher) =>
+        `<option value="${escapeHtml(teacher.id)}">${escapeHtml(teacher.fullName)} - ${escapeHtml(teacher.specialty || "General English")}</option>`,
+    )
+    .join("");
+
+  adminAssignmentForm.elements.studentId.innerHTML = `<option value="">Choose a student</option>${studentOptions}`;
+  adminAssignmentForm.elements.teacherId.innerHTML = `<option value="">Choose a teacher</option>${teacherOptions}`;
+}
+
+function renderAssignmentRows() {
+  if (!adminState.assignments.length) {
+    return `<tr><td colspan="5">No teacher assignments yet.</td></tr>`;
+  }
+
+  return adminState.assignments
+    .map(
+      (assignment) => `
+        <tr>
+          <td>${escapeHtml(assignment.studentName)}</td>
+          <td>${escapeHtml(assignment.teacherName)}</td>
+          <td>${escapeHtml(assignment.source || "manual")}</td>
+          <td>${escapeHtml(assignment.notes || "-")}</td>
+          <td>
+            <button
+              class="admin-edit-button"
+              type="button"
+              data-admin-assignment-student="${escapeHtml(assignment.studentId)}"
+              data-admin-assignment-teacher="${escapeHtml(assignment.teacherId)}"
+            >
+              Reassign
+            </button>
+          </td>
+        </tr>
+      `,
+    )
+    .join("");
 }
 
 function renderRows(items, type, getCells, colSpan) {
@@ -945,6 +1294,23 @@ async function saveAdminRecord(form, type, feedbackElement) {
     await renderAdminSummary();
   } catch (error) {
     feedbackElement.textContent = error.message;
+  }
+}
+
+async function saveAdminAssignment() {
+  const formData = new FormData(adminAssignmentForm);
+  const body = Object.fromEntries(formData.entries());
+
+  try {
+    await apiRequest("/api/admin/assignments", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    adminAssignmentFeedback.textContent = "Student assigned to teacher.";
+    adminAssignmentForm.reset();
+    await renderAdminSummary();
+  } catch (error) {
+    adminAssignmentFeedback.textContent = error.message;
   }
 }
 
@@ -1088,6 +1454,23 @@ function stopClassRecording() {
 menuButton.addEventListener("click", () => nav.classList.toggle("open"));
 logoutButton.addEventListener("click", signOut);
 refreshAdminButton.addEventListener("click", renderAdminSummary);
+refreshTeacherButton.addEventListener("click", renderTeacherSummary);
+copyTeacherInviteButton.addEventListener("click", async () => {
+  const link = teacherInviteLink.value;
+
+  if (!link) {
+    teacherInviteFeedback.textContent = "Invite link is not available yet.";
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(link);
+    teacherInviteFeedback.textContent = "Invite link copied.";
+  } catch (error) {
+    teacherInviteLink.select();
+    teacherInviteFeedback.textContent = "Invite link selected. Copy it from the field.";
+  }
+});
 window.addEventListener("hashchange", handleRouteChange);
 
 document.addEventListener("click", (event) => {
@@ -1102,6 +1485,15 @@ document.addEventListener("click", (event) => {
 
   if (resetButton) {
     resetAdminForm(document.querySelector(`#${resetButton.dataset.resetAdminForm}`));
+    return;
+  }
+
+  const assignmentButton = event.target.closest("[data-admin-assignment-student]");
+
+  if (assignmentButton) {
+    adminAssignmentForm.elements.studentId.value = assignmentButton.dataset.adminAssignmentStudent;
+    adminAssignmentForm.elements.teacherId.value = assignmentButton.dataset.adminAssignmentTeacher;
+    adminAssignmentForm.elements.notes.focus();
   }
 });
 
@@ -1123,12 +1515,23 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    state.userName = readStoredStudentProfile()?.fullName?.split(" ")[0] || "Student";
+    const fallbackRole = getLocalFallbackRole(email);
+    const teacherProfile = {
+      fullName: "Ana Teacher",
+      specialty: "Pronunciation",
+      status: "active",
+    };
+
+    state.userName =
+      fallbackRole === "teacher"
+        ? "Ana"
+        : readStoredStudentProfile()?.fullName?.split(" ")[0] || "Student";
     state.userEmail = email;
     state.userPhone = "";
-    state.userRole = email === "admin@example.com" ? "admin" : "student";
-    state.studentProfile = readStoredStudentProfile();
-    state.address = readStoredAddress();
+    state.userRole = fallbackRole;
+    state.studentProfile = fallbackRole === "student" ? readStoredStudentProfile() : null;
+    state.teacherProfile = fallbackRole === "teacher" ? teacherProfile : null;
+    state.address = fallbackRole === "student" ? readStoredAddress() : null;
     state.placement = readStoredPlacement();
     state.isSignedIn = true;
     localStorage.setItem("fluentpath:user", state.userName);
@@ -1136,11 +1539,14 @@ loginForm.addEventListener("submit", async (event) => {
     localStorage.setItem("fluentpath:phone", state.userPhone);
     localStorage.setItem("fluentpath:role", state.userRole);
     localStorage.setItem("fluentpath:signedIn", "true");
+    if (state.teacherProfile) {
+      localStorage.setItem("fluentpath:teacherProfile", JSON.stringify(state.teacherProfile));
+    }
   }
 
   loginFeedback.textContent = "Signed in.";
   refreshSessionCopy();
-  navigateTo(isAdmin() ? "admin" : "dashboard");
+  navigateTo(getDefaultRouteForRole());
 });
 
 signupForm.addEventListener("submit", async (event) => {
@@ -1148,6 +1554,7 @@ signupForm.addEventListener("submit", async (event) => {
   const formData = new FormData(signupForm);
   const profile = buildStudentProfile(formData);
   const password = formData.get("password")?.toString() || "";
+  const inviteCode = normalizeInviteCode(formData.get("inviteCode") || state.inviteCode || "");
 
   try {
     const payload = await apiRequest("/api/auth/signup", {
@@ -1156,6 +1563,7 @@ signupForm.addEventListener("submit", async (event) => {
         email: profile.email,
         password,
         profile,
+        inviteCode,
       }),
     });
     applySessionPayload(payload);
@@ -1166,6 +1574,7 @@ signupForm.addEventListener("submit", async (event) => {
     }
 
     state.studentProfile = profile;
+    state.teacherProfile = null;
     state.userName = profile.fullName.split(" ")[0] || "Student";
     state.userEmail = profile.email;
     state.userPhone = profile.phone;
@@ -1186,10 +1595,13 @@ signupForm.addEventListener("submit", async (event) => {
     localStorage.setItem("fluentpath:studentProfile", JSON.stringify(profile));
   }
   state.placement = null;
+  state.inviteCode = "";
   localStorage.removeItem("fluentpath:placement");
+  sessionStorage.removeItem("fluentpath:inviteCode");
 
-  signupFeedback.textContent =
-    "Student profile saved. The AI Teacher can now use these details to personalize the first lesson.";
+  signupFeedback.textContent = inviteCode
+    ? "Student profile saved and assigned to the teacher from the invite link."
+    : "Student profile saved. The AI Teacher can now use these details to personalize the first lesson.";
   refreshSessionCopy();
   navigateTo("dashboard");
 });
@@ -1290,6 +1702,11 @@ adminPlanForm.addEventListener("submit", (event) => {
 adminCourseForm.addEventListener("submit", (event) => {
   event.preventDefault();
   saveAdminRecord(adminCourseForm, "courses", adminCourseFeedback);
+});
+
+adminAssignmentForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveAdminAssignment();
 });
 
 newPhraseButton.addEventListener("click", choosePhrase);

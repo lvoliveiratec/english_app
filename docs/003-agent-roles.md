@@ -31,6 +31,8 @@ Responsibilities:
 
 - Student, teacher, and admin authentication.
 - Course, lesson, assignment, and progress APIs.
+- Teacher invite validation and teacher/student assignment rules.
+- Admin assignment and reassignment workflows.
 - Media upload authorization and processing job creation.
 - AI practice endpoint orchestration.
 - Pronunciation attempt metadata and processing status APIs.
@@ -45,6 +47,7 @@ Responsibilities:
 - Postgres schema design.
 - Student, teacher, course, lesson, progress, media, payment, and audit entities.
 - Address and pronunciation attempt entities.
+- Teacher invite and teacher/student assignment entities.
 - Data retention fields and deletion workflows.
 - Permission boundaries for student-specific records.
 - Database migrations and seed data.

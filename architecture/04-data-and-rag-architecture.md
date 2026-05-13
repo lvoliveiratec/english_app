@@ -12,6 +12,7 @@ Core entity groups:
 - Learning: students, courses, units, lessons, activities, enrollments.
 - Progress: practice sessions, session turns, assessments, skill snapshots.
 - Teaching: teachers, cohorts, assignments, teacher notes.
+- Teacher invites: invite codes, status, use counts, expiration, and teacher ownership.
 - Media: media assets, derivatives, transcripts, pronunciation metrics.
 - Pronunciation attempts: student, phrase, duration, local size estimate, object-storage URL when available, transcript, processing status, and timestamp.
 - AI memory: student mistakes, summaries, review schedules, recommendations.
@@ -99,4 +100,5 @@ Examples:
 - Raw media should have strict retention rules.
 - Deletion must cover database rows, object storage, vector records, transcripts, summaries, and cached exports.
 - Admin and teacher access must be audited.
+- Teacher access to student-specific context must be constrained by active teacher/student assignments.
 - Consent must be captured before class recording or media analysis.

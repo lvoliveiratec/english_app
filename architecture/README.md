@@ -18,6 +18,8 @@ It is meant to be the place where we keep the project's structural drawings, ser
 
 - The product experience is English-only.
 - Student-specific memory must be isolated per student.
+- Human teacher access to student context is assignment-based.
+- Teacher invite links are an onboarding shortcut, not a replacement for admin reassignment controls.
 - Raw media is sensitive and should not be exposed broadly.
 - The AI Teacher should receive authorized, compact context assembled server-side.
 - The first production backend should be modular, but not split into too many services too early.

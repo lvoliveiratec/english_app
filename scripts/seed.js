@@ -87,12 +87,13 @@ async function seed() {
       `
         insert into student_profiles (
           user_id, full_name, age, native_language, level, goal, confidence, study_time,
-          interests, favorite_media, hobbies, food_and_drinks, sports, motivation
+          interests, favorite_media, hobbies, food_and_drinks, sports, motivation,
+          assignment_status
         )
         values ($1, 'Lucas', null, 'Portuguese', 'Beginner', 'Daily conversation',
           'Comfortable with simple phrases', '20 minutes a day',
           $2, 'Business videos and short series.', 'Technology and language practice.',
-          'Coffee and pizza.', 'Gym', 'Improve English for real conversations.')
+          'Coffee and pizza.', 'Gym', 'Improve English for real conversations.', 'assigned')
         on conflict (user_id)
         do update set
           full_name = excluded.full_name,
@@ -107,6 +108,7 @@ async function seed() {
           food_and_drinks = excluded.food_and_drinks,
           sports = excluded.sports,
           motivation = excluded.motivation,
+          assignment_status = 'assigned',
           updated_at = now()
       `,
       [studentId, ["Movies and series", "Work and business"]],
@@ -138,6 +140,25 @@ async function seed() {
           updated_at = now()
       `,
       [adminId],
+    );
+    await client.query(
+      `
+        insert into teacher_student_assignments (teacher_id, student_id, status, source, notes)
+        values ($1, $2, 'active', 'seed', 'Demo assignment for teacher dashboard.')
+        on conflict (teacher_id, student_id)
+        do update set status = excluded.status, source = excluded.source,
+          notes = excluded.notes, updated_at = now()
+      `,
+      [teacherId, studentId],
+    );
+    await client.query(
+      `
+        insert into teacher_invites (teacher_id, code, status)
+        values ($1, 'ANA-TEACHER', 'active')
+        on conflict (code)
+        do update set teacher_id = excluded.teacher_id, status = excluded.status, updated_at = now()
+      `,
+      [teacherId],
     );
 
     await client.query(

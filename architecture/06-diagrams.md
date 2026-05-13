@@ -19,6 +19,7 @@ flowchart LR
   API -. future .-> AI[AI Orchestration]
 
   DB --> Users[Users And Profiles]
+  DB --> Assignments[Teacher Assignments And Invites]
   DB --> AdminData[Admin Data]
   DB --> Attempts[Pronunciation Attempts]
   DB --> Progress[Lesson Progress]
@@ -48,7 +49,11 @@ flowchart TD
   Method --> Login
   Home --> Login
   Login --> Signup[Create Account]
+  TeacherInvite[Teacher Invite Link] --> Signup
   Signup --> Dashboard[Student Dashboard]
+  Signup --> Assignment{Invite?}
+  Assignment -->|yes| TeacherAssignment[Create Teacher Assignment]
+  Assignment -->|no| PendingAssignment[Pending Admin Assignment]
   Login --> Dashboard
   Dashboard --> Baseline[Placement Baseline]
   Dashboard --> Pronunciation[Read Out Loud Practice]
@@ -68,12 +73,14 @@ flowchart TD
   Router --> Auth[auth routes]
   Router --> Account[account routes]
   Router --> Admin[admin routes]
+  Router --> Teacher[teacher routes]
   Router --> Pronunciation[pronunciation routes]
   Router --> Static[static file serving]
 
   Auth --> Storage[src/storage]
   Account --> Storage
   Admin --> Storage
+  Teacher --> Storage
   Pronunciation --> Storage
 
   Storage --> Pg[PostgreSQL adapter]
@@ -83,6 +90,8 @@ flowchart TD
   Schema --> Addresses[addresses]
   Schema --> Plans[plans and payments]
   Schema --> Attempts[pronunciation_attempts]
+  Schema --> Assignments[teacher_student_assignments]
+  Schema --> Invites[teacher_invites]
 ```
 
 ## Admin Flow
@@ -93,14 +102,31 @@ flowchart TD
   AdminDashboard --> Summary[Operational Summary]
   AdminDashboard --> Students[Create Or Edit Students]
   AdminDashboard --> Teachers[Create Or Edit Teachers]
+  AdminDashboard --> Assign[Assign Or Reassign Students]
   AdminDashboard --> Plans[Create Or Edit Plans]
   AdminDashboard --> Courses[Create Or Edit Courses]
 
   Summary --> DB[(Postgres Or Memory)]
   Students --> DB
   Teachers --> DB
+  Assign --> DB
   Plans --> DB
   Courses --> DB
+```
+
+## Teacher Flow
+
+```mermaid
+flowchart TD
+  TeacherLogin[Teacher Login] --> TeacherDashboard[Teacher Dashboard]
+  TeacherDashboard --> Summary[Assigned Student Summary]
+  TeacherDashboard --> Invite[Teacher Invite Link]
+  TeacherDashboard --> Actions[Suggested Teacher Actions]
+
+  Invite --> Signup[Student Signup With Invite Code]
+  Signup --> Assignment[Active Teacher Student Assignment]
+  Assignment --> DB[(Postgres Or Memory)]
+  Summary --> DB
 ```
 
 ## AI Teacher Context Flow

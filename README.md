@@ -8,7 +8,9 @@ First prototype of an English learning app/site with:
 - Simulated AI Coach
 - Student dashboard with profile-aware AI Teacher copy
 - Initial backend API with auth, sessions, student addresses, PostgreSQL schema, and in-memory fallback
-- Admin dashboard prototype with metrics plus forms to create/edit students, teachers, plans, and courses
+- Teacher dashboard with assigned-student progress, next actions, and teacher invite links
+- Admin dashboard prototype with metrics plus forms to create/edit students, teachers, assignments, plans, and courses
+- Teacher invite links that automatically assign new student signups to the inviting teacher
 - Pronunciation practice with local audio recording
 - Pronunciation attempt records with student, phrase, timestamp, and processing status
 - Local audio/video recording for in-person classes, with consent
@@ -77,12 +79,15 @@ POST /api/auth/signup
 POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
+GET  /api/invites/:code
 GET  /api/account
 PUT  /api/account
 PUT  /api/account/password
 POST /api/pronunciation-attempts
+GET  /api/teacher/summary
 GET  /api/admin/summary
 GET  /api/admin/resources
+POST /api/admin/assignments
 POST /api/admin/students
 PUT  /api/admin/students/:id
 POST /api/admin/teachers
@@ -101,6 +106,14 @@ lucas@example.com / english123
 admin@example.com / admin123
 teacher@example.com / teacher123
 ```
+
+Seeded teacher invite link:
+
+```text
+?invite=ANA-TEACHER#signup
+```
+
+Students who sign up through a valid invite are automatically linked to that teacher through `teacher_student_assignments`. Students who sign up normally start with `assignment_status = pending_assignment` and can be assigned manually from the Admin dashboard.
 
 When the app is served over HTTP/HTTPS, login, signup, admin, account, and pronunciation attempts are expected to use the backend API. Local browser fallback is kept only for opening `index.html` directly as a static file.
 
@@ -179,7 +192,7 @@ Repository instructions for AI coding agents live in `AGENTS.md`.
 ## Next technical steps
 
 1. Add lesson progress create/update endpoints.
-2. Add teacher-facing APIs and teacher dashboard screens.
+2. Persist placement/baseline data server-side.
 3. Add admin management for payments, consent, retention, and deletion policies.
 4. Add authorized audio/video upload records before processing real media.
 5. Add transcription and AI feedback pipelines using student history.
