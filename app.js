@@ -1771,19 +1771,56 @@ function cleanForSpeech(text) {
     .trim();
 }
 
+// Priority list of natural-sounding English voices across platforms
+const PREFERRED_VOICES = [
+  "Google US English",       // Chrome desktop
+  "Samantha",                // iOS / macOS
+  "Karen",                   // iOS Australian
+  "Moira",                   // iOS Irish
+  "Daniel",                  // iOS British
+  "Google UK English Female",
+  "Microsoft Aria Online",   // Edge
+  "Microsoft Jenny Online",  // Edge
+];
+
+function pickBestVoice(voices) {
+  for (const name of PREFERRED_VOICES) {
+    const match = voices.find((v) => v.name === name);
+    if (match) return match;
+  }
+  // Fallback: any en-US or en voice that is not the default robotic one
+  return (
+    voices.find((v) => v.lang === "en-US" && v.localService === false) ||
+    voices.find((v) => v.lang.startsWith("en"))
+  );
+}
+
 function speakText(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
+
   const utterance = new SpeechSynthesisUtterance(cleanForSpeech(text));
   utterance.lang = "en-US";
   utterance.rate = 0.85;
-  utterance.pitch = 1.05;
+  utterance.pitch = 1.0;
+
+  const doSpeak = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const voice = pickBestVoice(voices);
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // iOS loads voices asynchronously — wait for them if not ready yet
   const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find(
-    (v) => v.lang === "en-US" && (v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Karen")),
-  );
-  if (preferred) utterance.voice = preferred;
-  window.speechSynthesis.speak(utterance);
+  if (voices.length > 0) {
+    doSpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.onvoiceschanged = null;
+      doSpeak();
+    };
+  }
 }
 
 let activeRecognition = null;
