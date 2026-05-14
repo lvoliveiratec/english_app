@@ -5,12 +5,15 @@ const { handleAccountRoutes } = require("./account");
 const { handlePlacementRoutes } = require("./placement");
 const { handlePronunciationRoutes } = require("./pronunciation");
 const { handleRecordingRoutes } = require("./recordings");
+const { handleTtsRoutes } = require("./tts");
 const { handleTeacherRoutes } = require("./teacher");
 
 async function handleApiRequest({ request, response, parsedUrl, storage }) {
   try {
     if (request.method === "GET" && parsedUrl.pathname === "/api/health") {
-      sendJson(response, 200, await storage.health());
+      const health = await storage.health();
+      health.features = { tts: !!process.env.ELEVENLABS_API_KEY };
+      sendJson(response, 200, health);
       return true;
     }
 
@@ -31,6 +34,10 @@ async function handleApiRequest({ request, response, parsedUrl, storage }) {
     }
 
     if (await handleRecordingRoutes({ request, response, parsedUrl, storage })) {
+      return true;
+    }
+
+    if (await handleTtsRoutes({ request, response, parsedUrl })) {
       return true;
     }
 

@@ -1772,6 +1772,12 @@ copyTeacherInviteButton.addEventListener("click", async () => {
 });
 window.addEventListener("hashchange", handleRouteChange);
 
+// Detect ElevenLabs TTS availability from server feature flags
+fetch("/api/health", { credentials: "same-origin" })
+  .then((r) => r.json())
+  .then((d) => { window.__elevenLabsEnabled = d.features?.tts === true; })
+  .catch(() => { window.__elevenLabsEnabled = false; });
+
 document.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-admin-edit]");
 
@@ -1989,7 +1995,59 @@ function pickBestVoice(voices) {
   );
 }
 
+async function speakTextElevenLabs(text) {
+  const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
+  const rawLines = text.split(/\n+/).filter(Boolean);
+  const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
+
+  const speakerIndexMap = {};
+  let speakerCount = 0;
+
+  const queue = rawLines.map((line) => {
+    const m = line.match(speakerPattern);
+    const speaker = m ? m[1].trim() : "_default";
+    const content = cleanForSpeech(m ? line.slice(m[0].length) : line);
+    if (!(speaker in speakerIndexMap)) {
+      speakerIndexMap[speaker] = speakerCount < 2 ? speakerCount : 0;
+      speakerCount++;
+    }
+    return { voiceIndex: hasSpeakers ? speakerIndexMap[speaker] : 0, content };
+  });
+
+  for (const { voiceIndex, content } of queue) {
+    if (!content.trim()) continue;
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ text: content, voiceIndex }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      await new Promise((resolve) => {
+        const audio = new Audio(url);
+        audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+        audio.onerror = resolve;
+        audio.play().catch(resolve);
+      });
+    } catch {
+      // Fall through to next line if one fails
+    }
+  }
+}
+
 function speakText(text) {
+  // Use ElevenLabs if API key is configured (checked via env at load time)
+  if (window.__elevenLabsEnabled) {
+    speakTextElevenLabs(text).catch(() => speakTextBrowser(text));
+    return;
+  }
+  speakTextBrowser(text);
+}
+
+function speakTextBrowser(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
 
