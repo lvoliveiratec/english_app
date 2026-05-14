@@ -2114,18 +2114,34 @@ function renderLessonAnalysis(analysis) {
   lessonAnalysisResult.hidden = false;
 }
 
-async function uploadAndAnalyzeBlob(blob) {
+function inferMimeFromName(name) {
+  if (!name) return null;
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  const map = { m4a: "audio/mp4", mp3: "audio/mpeg", wav: "audio/wav", aac: "audio/mp4", mp4: "video/mp4", mov: "video/mp4", webm: "audio/webm", ogg: "audio/ogg" };
+  return map[ext] || null;
+}
+
+async function uploadAndAnalyzeBlob(blob, fileName) {
   lessonAnalysisPanel.hidden = false;
   lessonAnalysisResult.hidden = true;
   lessonMistakesSection.hidden = true;
   lessonVocabSection.hidden = true;
   lessonRecommendationsSection.hidden = true;
+  lessonAnalysisStatus.textContent = "Reading audio file…";
+
+  // iOS Safari fix: files from the Files app are lazy-loaded from disk.
+  // Explicitly reading into ArrayBuffer forces the read before fetch tries to send it,
+  // preventing the "Load failed" error.
+  const arrayBuffer = await blob.arrayBuffer();
+  const mimeType = blob.type || inferMimeFromName(fileName) || "audio/mp4";
+  const safeBlob = new Blob([arrayBuffer], { type: mimeType });
+
   lessonAnalysisStatus.textContent = "Uploading audio…";
 
   const { recordingId } = await fetch("/api/recordings", {
     method: "POST",
-    headers: { "Content-Type": blob.type || "audio/webm" },
-    body: blob,
+    headers: { "Content-Type": safeBlob.type },
+    body: safeBlob,
     credentials: "same-origin",
   }).then(async (res) => {
     const data = await res.json();
@@ -2176,7 +2192,7 @@ audioFileInput.addEventListener("change", async () => {
   classFeedback.textContent = `File selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB). Uploading…`;
 
   try {
-    await uploadAndAnalyzeBlob(file);
+    await uploadAndAnalyzeBlob(file, file.name);
     classFeedback.textContent = "Analysis complete. See results below.";
   } catch (error) {
     classFeedback.textContent = `Error: ${error.message}`;
