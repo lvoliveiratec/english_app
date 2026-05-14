@@ -194,6 +194,9 @@ create table if not exists ai_feedback (
   created_at timestamptz not null default now()
 );
 
+alter table ai_feedback add column if not exists source_data text;
+alter table ai_feedback add column if not exists score integer;
+
 create table if not exists lesson_recordings (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references users(id) on delete cascade,

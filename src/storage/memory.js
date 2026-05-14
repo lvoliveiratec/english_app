@@ -869,18 +869,23 @@ class MemoryStorage {
     profile.levelReviewStatus = action === "approve" ? "approved" : "dismissed";
   }
 
-  async savePlacement(studentId, { feedback, level, priorities }) {
-    this.state.placements = this.state.placements.filter(
-      (item) => item.studentId !== studentId,
-    );
-    this.state.placements.push({ studentId, feedback, level, priorities, createdAt: nowIso() });
+  async savePlacement(studentId, { feedback, level, priorities, score, questions, answers }) {
+    if (!this.state.placements) this.state.placements = [];
+    const id = `pl_${Date.now()}`;
+    this.state.placements.push({ id, studentId, feedback, level, priorities, score: score ?? null, questions: questions || [], answers: answers || {}, createdAt: nowIso() });
+  }
+
+  async getPlacementById(placementId, studentId) {
+    const entry = (this.state.placements || []).find((p) => p.id === placementId && p.studentId === studentId);
+    if (!entry) return null;
+    return { id: entry.id, feedback: entry.feedback, priorities: entry.priorities, score: entry.score, level: entry.level, questions: entry.questions || [], answers: entry.answers || {}, createdAt: entry.createdAt };
   }
 
   async getAllPlacements(studentId) {
     return [...(this.state.placements || [])]
       .filter((p) => p.studentId === studentId)
       .reverse()
-      .map((p) => ({ id: p.studentId + p.createdAt, feedback: p.feedback, priorities: p.priorities, createdAt: p.createdAt }));
+      .map((p) => ({ id: p.id, feedback: p.feedback, priorities: p.priorities, score: p.score, level: p.level, createdAt: p.createdAt }));
   }
 
   async getLatestPlacement(studentId) {

@@ -18,6 +18,10 @@ const accountNavLink = document.querySelector("#accountNavLink");
 const courseGrid = document.querySelector("#courseGrid");
 const lessonGrid = document.querySelector("#lessonGrid");
 const myTestsContent = document.querySelector("#myTestsContent");
+const testDetailContent = document.querySelector("#testDetailContent");
+const testDetailTitle = document.querySelector("#testDetailTitle");
+const testDetailEyebrow = document.querySelector("#testDetailEyebrow");
+const testDetailBack = document.querySelector("#testDetailBack");
 const studentNavLinks = [...document.querySelectorAll("[data-student-nav]")];
 const homeCoachGreeting = document.querySelector("#homeCoachGreeting");
 const homeCoachSummary = document.querySelector("#homeCoachSummary");
@@ -398,6 +402,16 @@ function setRoute(routeName) {
 
   if (safeRoute === "my-tests") {
     renderMyTests();
+  }
+
+  if (safeRoute === "test-detail") {
+    const params = new URLSearchParams(window.location.search);
+    renderTestDetail({
+      testId: params.get("testId") || sessionStorage.getItem("fp:testDetailId"),
+      studentId: params.get("studentId") || sessionStorage.getItem("fp:testDetailStudentId") || null,
+      studentName: params.get("studentName") || sessionStorage.getItem("fp:testDetailStudentName") || null,
+      backRoute: params.get("back") || sessionStorage.getItem("fp:testDetailBack") || "my-tests",
+    });
   }
 
   if (safeRoute === "account") {
@@ -934,6 +948,56 @@ function getLocalTeacherSummary() {
   };
 }
 
+function testScoreColor(score) {
+  if (score == null) return "";
+  return score >= 7 ? "score-high" : score >= 4 ? "score-mid" : "score-low";
+}
+
+function renderTestDetailHtml(placement) {
+  const date = new Date(placement.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const score = placement.score;
+  const scoreHtml = score != null
+    ? `<div class="test-score ${testScoreColor(score)}" style="font-size:2.5rem;margin-bottom:0.5rem">${score}<span>/10</span></div>`
+    : "";
+
+  const levelBadge = placement.level ? `<span class="pill">${escapeHtml(placement.level)}</span>` : "";
+
+  const questionsHtml = (placement.questions || []).length > 0
+    ? `<div class="test-detail-section">
+        <p class="eyebrow">Questions &amp; Answers</p>
+        ${placement.questions.map((q) => {
+          const studentAnswer = (placement.answers || {})[q.id] || "(no answer)";
+          return `<div class="test-qa-item">
+            <span class="question-skill">${escapeHtml(q.skill || "")}</span>
+            <p class="test-qa-prompt">${escapeHtml(q.prompt || "")}</p>
+            <p class="test-qa-answer">Your answer: <strong>${escapeHtml(studentAnswer)}</strong></p>
+          </div>`;
+        }).join("")}
+      </div>`
+    : "";
+
+  const prioritiesHtml = (placement.priorities || []).length > 0
+    ? `<div class="test-detail-section">
+        <p class="eyebrow">What to practice</p>
+        <ul class="activity-list">${placement.priorities.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+      </div>`
+    : "";
+
+  return `
+    <div style="margin-bottom:1rem">
+      ${scoreHtml}
+      ${levelBadge}
+      <p class="test-date">${escapeHtml(date)}</p>
+    </div>
+    <div class="test-detail-section">
+      <p class="eyebrow">AI Feedback</p>
+      <p class="test-feedback">${escapeHtml(placement.feedback || "")}</p>
+    </div>
+    ${prioritiesHtml}
+    ${questionsHtml}
+  `;
+}
+
 const levelScores = {
   Beginner: 2,
   Elementary: 4,
@@ -957,29 +1021,75 @@ async function renderMyTests() {
     myTestsContent.innerHTML = placements
       .map((p) => {
         const date = new Date(p.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-        const score = typeof p.score === "number" ? p.score : null;
-        const scoreHtml = score !== null
-          ? `<div class="test-score ${score >= 7 ? "score-high" : score >= 4 ? "score-mid" : "score-low"}">${score}<span>/10</span></div>`
-          : "";
-        const priorities = (p.priorities || [])
-          .map((pr) => `<li>${escapeHtml(pr)}</li>`)
-          .join("");
-
-        return `<div class="test-history-card">
+        const score = p.score;
+        const level = p.level || "";
+        return `<div class="test-history-card test-history-card--compact" data-test-id="${escapeHtml(p.id)}" style="cursor:pointer">
           <div class="test-history-header">
             <div>
               <p class="eyebrow">Placement test</p>
               <p class="test-date">${escapeHtml(date)}</p>
+              ${level ? `<span class="pill" style="margin-top:0.3rem">${escapeHtml(level)}</span>` : ""}
             </div>
-            ${scoreHtml}
+            ${score != null ? `<div class="test-score ${testScoreColor(score)}">${score}<span>/10</span></div>` : `<div class="test-score" style="color:var(--muted);font-size:1rem">Not scored</div>`}
           </div>
-          <p class="test-feedback">${escapeHtml(p.feedback || "")}</p>
-          ${priorities ? `<ul class="activity-list">${priorities}</ul>` : ""}
+          <p class="test-feedback" style="color:var(--accent);font-size:0.88rem;margin-top:0.5rem">Tap to view details →</p>
         </div>`;
       })
       .join("");
   } catch (error) {
     myTestsContent.innerHTML = `<p class="feedback-text error">Could not load test history: ${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function renderTestDetail({ testId, studentId, studentName, backRoute }) {
+  testDetailContent.innerHTML = `<p class="feedback-text">Loading…</p>`;
+  testDetailBack.href = `#${backRoute || "my-tests"}`;
+
+  try {
+    // Teacher viewing a student's test LIST (no specific testId yet)
+    if (studentId && !testId) {
+      testDetailEyebrow.textContent = `${studentName || "Student"}'s tests`;
+      testDetailTitle.textContent = "Select a test to view";
+      const { placements } = await apiRequest(`/api/teacher/students/${studentId}/tests`);
+      if (!placements || placements.length === 0) {
+        testDetailContent.innerHTML = `<p class="feedback-text">This student has not taken any placement tests yet.</p>`;
+        return;
+      }
+      testDetailContent.innerHTML = placements.map((p) => {
+        const date = new Date(p.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        return `<div class="test-history-card test-history-card--compact"
+          data-test-id="${escapeHtml(p.id)}"
+          data-student-id="${escapeHtml(studentId)}"
+          data-student-name="${escapeHtml(studentName || "")}"
+          style="cursor:pointer">
+          <div class="test-history-header">
+            <div>
+              <p class="eyebrow">Placement test</p>
+              <p class="test-date">${escapeHtml(date)}</p>
+              ${p.level ? `<span class="pill" style="margin-top:0.3rem">${escapeHtml(p.level)}</span>` : ""}
+            </div>
+            ${p.score != null ? `<div class="test-score ${testScoreColor(p.score)}">${p.score}<span>/10</span></div>` : `<div class="test-score" style="color:var(--muted);font-size:1rem">Not scored</div>`}
+          </div>
+          <p class="test-feedback" style="color:var(--accent);font-size:0.88rem;margin-top:0.5rem">Tap to view details →</p>
+        </div>`;
+      }).join("");
+      return;
+    }
+
+    // Show specific test detail
+    let placement;
+    if (studentId && testId) {
+      placement = await apiRequest(`/api/teacher/students/${studentId}/tests/${testId}`);
+      testDetailEyebrow.textContent = `${studentName || "Student"}'s test`;
+    } else {
+      placement = await apiRequest(`/api/my-tests/${testId}`);
+      testDetailEyebrow.textContent = "Placement test";
+    }
+
+    testDetailTitle.textContent = placement.level ? `Result: ${placement.level}` : "Test details";
+    testDetailContent.innerHTML = renderTestDetailHtml(placement);
+  } catch (error) {
+    testDetailContent.innerHTML = `<p class="feedback-text error">Could not load test: ${escapeHtml(error.message)}</p>`;
   }
 }
 
@@ -1050,7 +1160,14 @@ function updateTeacherSummary(summary) {
               <td>${escapeHtml(student.goal)}</td>
               <td>${escapeHtml(student.completion)}%</td>
               <td>${escapeHtml(student.difficulty)}</td>
-              <td>${escapeHtml(student.recommendation)}</td>
+              <td>
+                ${escapeHtml(student.recommendation)}
+                <br><a href="#test-detail" class="teacher-test-link"
+                  data-student-id="${escapeHtml(student.studentId)}"
+                  data-student-name="${escapeHtml(student.studentName)}">
+                  View tests →
+                </a>
+              </td>
             </tr>
           `,
         )
@@ -1855,15 +1972,15 @@ function speakText(text) {
 
   const doSpeak = () => {
     const voices = window.speechSynthesis.getVoices();
-    const lines = cleanForSpeech(text).split(/\n+/).filter(Boolean);
 
-    // Detect if dialogue has multiple speakers (e.g. "Travel Agent: ..." / "Tourist: ...")
-    const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s+/;
-    const hasSpeakers = lines.some((l) => speakerPattern.test(l));
+    // Split the RAW text first (before cleaning removes \n), then clean each line
+    const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
+    const rawLines = text.split(/\n+/).filter(Boolean);
+    const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
 
-    if (!hasSpeakers || lines.length <= 1) {
-      // Single voice
-      const utterance = new SpeechSynthesisUtterance(lines.join(". "));
+    if (!hasSpeakers) {
+      // Single voice — clean the whole text at once
+      const utterance = new SpeechSynthesisUtterance(cleanForSpeech(text));
       utterance.lang = "en-US";
       utterance.rate = 0.85;
       const voice = pickBestVoice(voices);
@@ -1893,11 +2010,11 @@ function speakText(text) {
       return speakerMap[name];
     }
 
-    const queue = lines.map((line) => {
+    const queue = rawLines.map((line) => {
       const m = line.match(speakerPattern);
       const speaker = m ? m[1].trim() : "_default";
-      const content = m ? line.slice(m[0].length) : line;
-      return { speaker, content };
+      const rawContent = m ? line.slice(m[0].length) : line;
+      return { speaker, content: cleanForSpeech(rawContent) }; // Clean each line individually
     });
 
     let idx = 0;
@@ -2358,6 +2475,40 @@ audioFileInput.addEventListener("change", async () => {
     uploadFileLabel.style.opacity = "";
     audioFileInput.value = "";
   }
+});
+
+testDetailContent.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-test-id]");
+  if (!card) return;
+  const sid = card.dataset.studentId;
+  const sname = card.dataset.studentName;
+  sessionStorage.setItem("fp:testDetailId", card.dataset.testId);
+  if (sid) {
+    sessionStorage.setItem("fp:testDetailStudentId", sid);
+    sessionStorage.setItem("fp:testDetailStudentName", sname || "");
+  }
+  setRoute("test-detail"); // re-render the same page with new params
+});
+
+myTestsContent.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-test-id]");
+  if (!card) return;
+  sessionStorage.setItem("fp:testDetailId", card.dataset.testId);
+  sessionStorage.removeItem("fp:testDetailStudentId");
+  sessionStorage.removeItem("fp:testDetailStudentName");
+  sessionStorage.setItem("fp:testDetailBack", "my-tests");
+  navigateTo("test-detail");
+});
+
+teacherStudentRows.addEventListener("click", (event) => {
+  const link = event.target.closest(".teacher-test-link");
+  if (!link) return;
+  event.preventDefault();
+  sessionStorage.setItem("fp:testDetailStudentId", link.dataset.studentId);
+  sessionStorage.setItem("fp:testDetailStudentName", link.dataset.studentName);
+  sessionStorage.removeItem("fp:testDetailId");
+  sessionStorage.setItem("fp:testDetailBack", "teacher");
+  navigateTo("test-detail");
 });
 
 adminLevelSuggestionRows.addEventListener("click", async (event) => {

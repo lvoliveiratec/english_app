@@ -91,7 +91,11 @@ async function handlePlacementRoutes({ request, response, parsedUrl, storage }) 
       result = await runPlacementAgent({ profile, level, goal, writing });
     }
 
-    await storage.savePlacement(session.user.id, result);
+    await storage.savePlacement(session.user.id, {
+      ...result,
+      questions: body.questions || null,
+      answers: body.answers || null,
+    });
 
     if (result.level !== level) {
       await storage.createLevelSuggestion(session.user.id, {
@@ -102,6 +106,22 @@ async function handlePlacementRoutes({ request, response, parsedUrl, storage }) 
     }
 
     sendJson(response, 200, result);
+    return true;
+  }
+
+  if (request.method === "GET" && parsedUrl.pathname.startsWith("/api/my-tests/")) {
+    const session = await requireStudent(request, response, storage);
+    if (!session) return true;
+
+    const placementId = parsedUrl.pathname.slice("/api/my-tests/".length);
+    const placement = await storage.getPlacementById(placementId, session.user.id);
+
+    if (!placement) {
+      sendJson(response, 404, { error: "Test not found." });
+      return true;
+    }
+
+    sendJson(response, 200, placement);
     return true;
   }
 

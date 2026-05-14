@@ -786,6 +786,36 @@ input {
   content: "📎";
 }
 
+.test-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.test-qa-item {
+  background: #f7fafc;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.test-qa-prompt {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+}
+
+.test-qa-answer {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.teacher-test-link {
+  font-size: 0.82rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
 .test-history-card {
   background: #fff;
   border: 1px solid var(--line);

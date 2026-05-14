@@ -61,7 +61,7 @@ async function transcribeAudio(filePath) {
   const transcript = await client.transcripts.transcribe({
     audio: filePath,
     speaker_labels: true,
-    speech_model: "universal-2",
+    speech_models: ["universal-2"],
   });
 
   if (transcript.status === "error") {

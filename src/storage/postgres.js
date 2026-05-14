@@ -1088,14 +1088,15 @@ class PostgresStorage {
     }
   }
 
-  async savePlacement(studentId, { feedback, level, priorities }) {
+  async savePlacement(studentId, { feedback, level, priorities, score, questions, answers }) {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
+      const sourceData = questions && answers ? JSON.stringify({ questions, answers, level }) : null;
       await client.query(
-        `insert into ai_feedback (student_id, source_type, summary, recommendations)
-         values ($1, 'placement', $2, $3)`,
-        [studentId, feedback, priorities],
+        `insert into ai_feedback (student_id, source_type, summary, recommendations, score, source_data)
+         values ($1, 'placement', $2, $3, $4, $5)`,
+        [studentId, feedback, priorities, score ?? null, sourceData],
       );
       await client.query("commit");
     } catch (error) {
@@ -1106,21 +1107,51 @@ class PostgresStorage {
     }
   }
 
+  async getPlacementById(placementId, studentId) {
+    const result = await this.pool.query(
+      `select af.id, af.summary as feedback, af.recommendations as priorities,
+              af.score, af.source_data, af.created_at
+       from ai_feedback af
+       where af.id = $1 and af.student_id = $2 and af.source_type = 'placement'`,
+      [placementId, studentId],
+    );
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    let sourceData = null;
+    try { if (row.source_data) sourceData = JSON.parse(row.source_data); } catch {}
+    return {
+      id: row.id,
+      feedback: row.feedback,
+      priorities: row.priorities || [],
+      score: row.score,
+      level: sourceData?.level || null,
+      questions: sourceData?.questions || [],
+      answers: sourceData?.answers || {},
+      createdAt: row.created_at,
+    };
+  }
+
   async getAllPlacements(studentId) {
     const result = await this.pool.query(
       `select af.id, af.summary as feedback, af.recommendations as priorities,
-              af.created_at
+              af.score, af.source_data, af.created_at
        from ai_feedback af
        where af.student_id = $1 and af.source_type = 'placement'
        order by af.created_at desc`,
       [studentId],
     );
-    return result.rows.map((row) => ({
-      id: row.id,
-      feedback: row.feedback,
-      priorities: row.priorities || [],
-      createdAt: row.created_at,
-    }));
+    return result.rows.map((row) => {
+      let level = null;
+      try { if (row.source_data) level = JSON.parse(row.source_data)?.level; } catch {}
+      return {
+        id: row.id,
+        feedback: row.feedback,
+        priorities: row.priorities || [],
+        score: row.score,
+        level,
+        createdAt: row.created_at,
+      };
+    });
   }
 
   async getLatestPlacement(studentId) {
