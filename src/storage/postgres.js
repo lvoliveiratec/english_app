@@ -239,6 +239,7 @@ class PostgresStorage {
     const progressResult = await this.pool.query(
       `
         select
+          student_profiles.user_id as student_id,
           student_profiles.full_name as student_name,
           student_profiles.level,
           student_profiles.goal,
@@ -282,6 +283,7 @@ class PostgresStorage {
         monthlyRevenueCents: payments.monthly_revenue_cents,
       },
       studentProgress: progressResult.rows.map((row) => ({
+        studentId: row.student_id,
         studentName: row.student_name,
         level: row.level,
         goal: row.goal,

@@ -131,6 +131,28 @@ async function handleAdminRoutes({ request, response, parsedUrl, storage }) {
     return true;
   }
 
+  // GET /api/admin/students/:studentId/tests
+  const adminTestsMatch = parsedUrl.pathname.match(/^\/api\/admin\/students\/([^/]+)\/tests$/);
+  if (request.method === "GET" && adminTestsMatch) {
+    if (!(await requireAdmin(request, response, storage))) return true;
+    const placements = await storage.getAllPlacements(adminTestsMatch[1]);
+    sendJson(response, 200, { placements });
+    return true;
+  }
+
+  // GET /api/admin/students/:studentId/tests/:testId
+  const adminTestDetailMatch = parsedUrl.pathname.match(/^\/api\/admin\/students\/([^/]+)\/tests\/([^/]+)$/);
+  if (request.method === "GET" && adminTestDetailMatch) {
+    if (!(await requireAdmin(request, response, storage))) return true;
+    const placement = await storage.getPlacementById(adminTestDetailMatch[2], adminTestDetailMatch[1]);
+    if (!placement) {
+      sendJson(response, 404, { error: "Test not found." });
+      return true;
+    }
+    sendJson(response, 200, placement);
+    return true;
+  }
+
   return false;
 }
 

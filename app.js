@@ -405,12 +405,12 @@ function setRoute(routeName) {
   }
 
   if (safeRoute === "test-detail") {
-    const params = new URLSearchParams(window.location.search);
     renderTestDetail({
-      testId: params.get("testId") || sessionStorage.getItem("fp:testDetailId"),
-      studentId: params.get("studentId") || sessionStorage.getItem("fp:testDetailStudentId") || null,
-      studentName: params.get("studentName") || sessionStorage.getItem("fp:testDetailStudentName") || null,
-      backRoute: params.get("back") || sessionStorage.getItem("fp:testDetailBack") || "my-tests",
+      testId: sessionStorage.getItem("fp:testDetailId") || null,
+      studentId: sessionStorage.getItem("fp:testDetailStudentId") || null,
+      studentName: sessionStorage.getItem("fp:testDetailStudentName") || null,
+      role: sessionStorage.getItem("fp:testDetailRole") || (isAdmin() ? "admin" : "teacher"),
+      backRoute: sessionStorage.getItem("fp:testDetailBack") || "my-tests",
     });
   }
 
@@ -950,14 +950,19 @@ function getLocalTeacherSummary() {
 
 function testScoreColor(score) {
   if (score == null) return "";
-  return score >= 7 ? "score-high" : score >= 4 ? "score-mid" : "score-low";
+  return score >= 70 ? "score-high" : score >= 40 ? "score-mid" : "score-low";
+}
+
+function scoreLabel(score) {
+  if (score == null) return `<div class="test-score" style="color:var(--muted);font-size:1rem">Not scored</div>`;
+  return `<div class="test-score ${testScoreColor(score)}">${score}<span>%</span></div>`;
 }
 
 function renderTestDetailHtml(placement) {
   const date = new Date(placement.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const score = placement.score;
   const scoreHtml = score != null
-    ? `<div class="test-score ${testScoreColor(score)}" style="font-size:2.5rem;margin-bottom:0.5rem">${score}<span>/10</span></div>`
+    ? `<div class="test-score ${testScoreColor(score)}" style="font-size:2.5rem;margin-bottom:0.5rem">${score}<span>%</span></div>`
     : "";
 
   const levelBadge = placement.level ? `<span class="pill">${escapeHtml(placement.level)}</span>` : "";
@@ -1030,7 +1035,7 @@ async function renderMyTests() {
               <p class="test-date">${escapeHtml(date)}</p>
               ${level ? `<span class="pill" style="margin-top:0.3rem">${escapeHtml(level)}</span>` : ""}
             </div>
-            ${score != null ? `<div class="test-score ${testScoreColor(score)}">${score}<span>/10</span></div>` : `<div class="test-score" style="color:var(--muted);font-size:1rem">Not scored</div>`}
+            ${scoreLabel(score)}
           </div>
           <p class="test-feedback" style="color:var(--accent);font-size:0.88rem;margin-top:0.5rem">Tap to view details →</p>
         </div>`;
@@ -1041,16 +1046,24 @@ async function renderMyTests() {
   }
 }
 
-async function renderTestDetail({ testId, studentId, studentName, backRoute }) {
+async function renderTestDetail({ testId, studentId, studentName, role, backRoute }) {
   testDetailContent.innerHTML = `<p class="feedback-text">Loading…</p>`;
   testDetailBack.href = `#${backRoute || "my-tests"}`;
 
   try {
-    // Teacher viewing a student's test LIST (no specific testId yet)
+    const isAdminView = role === "admin";
+    const listUrl = isAdminView
+      ? `/api/admin/students/${studentId}/tests`
+      : `/api/teacher/students/${studentId}/tests`;
+    const detailUrl = (sid, tid) => isAdminView
+      ? `/api/admin/students/${sid}/tests/${tid}`
+      : `/api/teacher/students/${sid}/tests/${tid}`;
+
+    // Viewing a student's test LIST (no specific testId yet)
     if (studentId && !testId) {
       testDetailEyebrow.textContent = `${studentName || "Student"}'s tests`;
       testDetailTitle.textContent = "Select a test to view";
-      const { placements } = await apiRequest(`/api/teacher/students/${studentId}/tests`);
+      const { placements } = await apiRequest(listUrl);
       if (!placements || placements.length === 0) {
         testDetailContent.innerHTML = `<p class="feedback-text">This student has not taken any placement tests yet.</p>`;
         return;
@@ -1068,7 +1081,7 @@ async function renderTestDetail({ testId, studentId, studentName, backRoute }) {
               <p class="test-date">${escapeHtml(date)}</p>
               ${p.level ? `<span class="pill" style="margin-top:0.3rem">${escapeHtml(p.level)}</span>` : ""}
             </div>
-            ${p.score != null ? `<div class="test-score ${testScoreColor(p.score)}">${p.score}<span>/10</span></div>` : `<div class="test-score" style="color:var(--muted);font-size:1rem">Not scored</div>`}
+            ${scoreLabel(p.score)}
           </div>
           <p class="test-feedback" style="color:var(--accent);font-size:0.88rem;margin-top:0.5rem">Tap to view details →</p>
         </div>`;
@@ -1079,7 +1092,7 @@ async function renderTestDetail({ testId, studentId, studentName, backRoute }) {
     // Show specific test detail
     let placement;
     if (studentId && testId) {
-      placement = await apiRequest(`/api/teacher/students/${studentId}/tests/${testId}`);
+      placement = await apiRequest(detailUrl(studentId, testId));
       testDetailEyebrow.textContent = `${studentName || "Student"}'s test`;
     } else {
       placement = await apiRequest(`/api/my-tests/${testId}`);
@@ -1156,18 +1169,19 @@ function updateTeacherSummary(summary) {
           (student) => `
             <tr>
               <td>${escapeHtml(student.studentName)}</td>
+              <td>
+                <a href="#test-detail" class="teacher-test-link secondary-action"
+                  style="padding:0.3rem 0.7rem;font-size:0.82rem;display:inline-block"
+                  data-student-id="${escapeHtml(student.studentId)}"
+                  data-student-name="${escapeHtml(student.studentName)}">
+                  📋 Tests
+                </a>
+              </td>
               <td>${escapeHtml(student.level)}</td>
               <td>${escapeHtml(student.goal)}</td>
               <td>${escapeHtml(student.completion)}%</td>
               <td>${escapeHtml(student.difficulty)}</td>
-              <td>
-                ${escapeHtml(student.recommendation)}
-                <br><a href="#test-detail" class="teacher-test-link"
-                  data-student-id="${escapeHtml(student.studentId)}"
-                  data-student-name="${escapeHtml(student.studentName)}">
-                  View tests →
-                </a>
-              </td>
+              <td>${escapeHtml(student.recommendation)}</td>
             </tr>
           `,
         )
@@ -1284,6 +1298,11 @@ function updateAdminSummary(summary) {
           (item) => `
             <tr>
               <td>${escapeHtml(item.studentName)}</td>
+              <td>${item.studentId ? `<a href="#test-detail" class="admin-test-link secondary-action"
+                  style="padding:0.3rem 0.7rem;font-size:0.82rem;display:inline-block"
+                  data-student-id="${escapeHtml(item.studentId)}"
+                  data-student-name="${escapeHtml(item.studentName)}">
+                  📋 Tests</a>` : "—"}</td>
               <td>${escapeHtml(item.level)}</td>
               <td>${escapeHtml(item.goal)}</td>
               <td>${escapeHtml(item.completion)}%</td>
@@ -1724,6 +1743,10 @@ async function startClassRecording(kind) {
 function stopClassRecording() {
   if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
     state.mediaRecorder.stop();
+  }
+  // Stop tracks immediately so the orange dot disappears on iOS right away
+  if (state.mediaStream) {
+    state.mediaStream.getTracks().forEach((track) => track.stop());
   }
 }
 
@@ -2477,6 +2500,18 @@ audioFileInput.addEventListener("change", async () => {
   }
 });
 
+document.querySelector("#adminProgressRows").addEventListener("click", (event) => {
+  const link = event.target.closest(".admin-test-link");
+  if (!link) return;
+  event.preventDefault();
+  sessionStorage.setItem("fp:testDetailStudentId", link.dataset.studentId);
+  sessionStorage.setItem("fp:testDetailStudentName", link.dataset.studentName);
+  sessionStorage.setItem("fp:testDetailRole", "admin");
+  sessionStorage.removeItem("fp:testDetailId");
+  sessionStorage.setItem("fp:testDetailBack", "admin");
+  navigateTo("test-detail");
+});
+
 testDetailContent.addEventListener("click", (event) => {
   const card = event.target.closest("[data-test-id]");
   if (!card) return;
@@ -2487,7 +2522,7 @@ testDetailContent.addEventListener("click", (event) => {
     sessionStorage.setItem("fp:testDetailStudentId", sid);
     sessionStorage.setItem("fp:testDetailStudentName", sname || "");
   }
-  setRoute("test-detail"); // re-render the same page with new params
+  setRoute("test-detail");
 });
 
 myTestsContent.addEventListener("click", (event) => {
@@ -2506,6 +2541,7 @@ teacherStudentRows.addEventListener("click", (event) => {
   event.preventDefault();
   sessionStorage.setItem("fp:testDetailStudentId", link.dataset.studentId);
   sessionStorage.setItem("fp:testDetailStudentName", link.dataset.studentName);
+  sessionStorage.setItem("fp:testDetailRole", "teacher");
   sessionStorage.removeItem("fp:testDetailId");
   sessionStorage.setItem("fp:testDetailBack", "teacher");
   navigateTo("test-detail");

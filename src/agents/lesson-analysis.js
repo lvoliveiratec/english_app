@@ -78,7 +78,13 @@ async function transcribeAudio(filePath) {
   return transcript.text || "";
 }
 
+const MAX_TRANSCRIPT_CHARS = 6000;
+
 async function analyzeLessonTranscript({ transcript, studentProfile, teacherProfile }) {
+  // Truncate very long transcripts to avoid hitting token limits
+  const truncated = transcript.length > MAX_TRANSCRIPT_CHARS
+    ? transcript.slice(0, MAX_TRANSCRIPT_CHARS) + "\n\n[Transcript truncated — showing first portion of the lesson]"
+    : transcript;
   const level = studentProfile?.level || "unknown";
   const goal = studentProfile?.goal || "general English";
   const nativeLang = studentProfile?.nativeLanguage || "not specified";
@@ -95,11 +101,11 @@ Student profile:
 Teacher: ${teacherName} (specialty: ${specialty})
 
 Transcript:
-${transcript}`;
+${truncated}`;
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
+    max_tokens: 1500,
     system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: userMessage }],
   });

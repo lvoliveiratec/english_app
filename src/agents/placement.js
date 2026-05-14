@@ -60,7 +60,7 @@ You MUST respond with valid JSON only — no markdown, no extra text, nothing be
 {"feedback":"2-3 encouraging sentences describing the result","level":"Beginner","score":6,"priorities":["priority 1","priority 2","priority 3"]}
 
 The level field must be exactly one of: Beginner, Elementary, Intermediate, Upper Intermediate, Advanced
-The score field must be an integer from 0 to 10 (10 = perfect, 0 = all wrong). Base it on how many of the 8 questions were answered correctly.`;
+The score field must be an integer from 0 to 100 representing the percentage of questions answered correctly (e.g. 5 correct out of 8 = 63). Round to the nearest whole number.`;
 
 const levelMetrics = {
   Beginner: { fluency: 12, listening: 18, pronunciation: 10 },
