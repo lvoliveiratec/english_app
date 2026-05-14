@@ -34,8 +34,9 @@ Teacher invite links use `?invite=CODE#signup`. When the invite code is valid, s
 ```text
 Student Dashboard
   -> AI Teacher greeting
-  -> placement baseline confirmation
+  -> AI placement baseline test
   -> read-out-loud pronunciation practice
+  -> optional class recording analysis
   -> recommended lesson
   -> lessons page
   -> account settings
@@ -52,21 +53,32 @@ Account
 
 ## Placement Baseline Goals
 
-The signup profile captures the first student context. The dashboard baseline step should confirm or adjust:
+The signup profile captures the first student context. The dashboard baseline test now measures and can adjust:
 
 - Current English level.
-- Learning goal.
-- Optional extra writing context.
+- Grammar and vocabulary control.
+- Reading comprehension.
+- Listening comprehension through hidden audio dialogues.
+- Speaking read-aloud and short response.
 - First estimated baseline for fluency, listening, and pronunciation.
 
 Future deeper assessment should also measure:
 
-- Speaking confidence.
 - Writing ability.
-- Vocabulary range.
-- Pronunciation patterns.
 - Preferred practice type.
 - Study schedule.
+
+## Class Recording Analysis Flow
+
+```text
+Student Dashboard
+  -> consent checkbox
+  -> record or upload audio/video
+  -> POST /api/recordings
+  -> AssemblyAI transcription
+  -> Claude lesson analysis
+  -> student sees summary, mistakes, vocabulary, recommendations
+```
 
 ## Teacher Assignment Flow
 

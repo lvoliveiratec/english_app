@@ -43,7 +43,7 @@ test.describe("FluentPath English smoke flow", () => {
 
     // Start placement test (button label depends on whether a prior result exists)
     await page.getByRole("button", { name: /take placement test|retake test/i }).click();
-    await expect(page.locator("#placementTestForm")).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("#placementTestForm")).toBeVisible({ timeout: 30000 });
 
     // Fill every text input with a plausible answer
     const textInputs = page.locator("#placementTestForm input[type='text']");
@@ -59,7 +59,7 @@ test.describe("FluentPath English smoke flow", () => {
     }
 
     await page.getByRole("button", { name: "Submit answers" }).click();
-    await expect(page.locator("#assessmentFeedback")).not.toBeEmpty({ timeout: 30000 });
+    await expect(page.locator("#assessmentFeedback")).not.toBeEmpty({ timeout: 60000 });
     await expect(page.locator("#fluencyValue")).toHaveText(/\d+%/);
     await expect(page.locator("#progressNote")).toContainText("baseline");
 

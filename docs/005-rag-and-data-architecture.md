@@ -50,6 +50,8 @@ Current prototype state:
 - Read-out-loud recording creates a `pronunciation_attempts` row with student ID, phrase, duration estimate, local size estimate, timestamp, and `recorded_locally` status.
 - Raw audio is still local to the browser.
 - Future upload processing should update the attempt with object-storage URL, transcript, pronunciation metrics, and analysis state.
+- Class recordings are handled separately in `lesson_recordings`: audio/video can be uploaded to local `uploads/`, transcribed by AssemblyAI, analyzed by Claude, and returned to the student as summary, mistakes, vocabulary, and practice recommendations.
+- Production media storage still needs object storage, retention/deletion workflows, and audit controls.
 
 ## RAG Indexes
 

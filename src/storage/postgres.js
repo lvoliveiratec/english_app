@@ -1159,7 +1159,7 @@ class PostgresStorage {
   async getLatestPlacement(studentId) {
     const result = await this.pool.query(
       `select af.summary as feedback, af.recommendations as priorities,
-              sp.level, af.created_at
+              sp.level, af.score, af.created_at
        from ai_feedback af
        join student_profiles sp on sp.user_id = $1
        where af.student_id = $1 and af.source_type = 'placement'
@@ -1173,6 +1173,7 @@ class PostgresStorage {
       feedback: row.feedback,
       level: row.level,
       priorities: row.priorities || [],
+      score: row.score,
       createdAt: row.created_at,
     };
   }

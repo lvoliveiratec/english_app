@@ -26,19 +26,22 @@
 - Signup and account settings capture contact and address data.
 - Authenticated account endpoints update profile, address, and password.
 - Pronunciation attempts create backend metadata with student, phrase, timestamp, and processing status.
+- Claude-powered placement test generation/evaluation stores server-side placement history and level suggestions.
+- ElevenLabs TTS serves natural listening audio for placement questions.
+- Class recording upload starts the media pipeline with local upload storage, AssemblyAI transcription, and Claude lesson analysis.
 
 ## Phase 2: Real App Foundation
 
 - Expand the backend API.
 - Harden authentication and session management.
 - Expand role-based profiles for students, teachers, and administrators.
-- Store lesson progress and placement data in the database.
+- Store lesson progress and placement data in the database. Placement history is implemented.
 - Move remaining `localStorage` state into server-side storage.
 - Add update endpoints for student profiles and progress.
 - Add teacher-facing APIs. Started with teacher summary.
 - Add teacher/student assignment APIs. Started with admin assignment creation and invite-based assignment.
 - Add remaining admin management actions for payments, consent, retention, deletion, and policies.
-- Create secure upload records for authorized audio/video.
+- Create secure upload records for authorized audio/video. Class recording records are started with local upload storage; production object storage and retention controls remain.
 - Split the frontend into modules or migrate to React + TypeScript before adding many more screens.
 
 Suggested first backend milestone:
@@ -58,6 +61,7 @@ Suggested first backend milestone:
 ## Phase 3: Applied AI
 
 - Transcribe class audio.
+- Analyze uploaded class recordings with Claude.
 - Analyze pronunciation.
 - Identify recurring errors.
 - Generate daily recommendations for each student.

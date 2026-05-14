@@ -42,6 +42,8 @@ Current prototype behavior:
 - The raw audio is not uploaded yet.
 - The attempt starts with `processing_status = recorded_locally`.
 - Future upload processing should attach `audio_storage_url`, then transcript and pronunciation metrics.
+- Class recordings use a separate `lesson_recordings` pipeline: media is uploaded to local `uploads/`, transcribed with AssemblyAI, analyzed by Claude, and stored with transcript/analysis metadata.
+- Production media still needs object storage, stronger consent records, retention windows, deletion workflows, and audit logs.
 
 ## Knowledge Bases
 

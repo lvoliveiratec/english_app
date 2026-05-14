@@ -1971,6 +1971,68 @@ function cleanForSpeech(text) {
     .trim();
 }
 
+function buildSpeechQueue(text) {
+  const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
+  const rawLines = text.split(/\n+/).filter(Boolean);
+  const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
+  const speakerIndexMap = {};
+  let speakerCount = 0;
+
+  return rawLines.map((line) => {
+    const match = line.match(speakerPattern);
+    const speaker = match ? match[1].trim() : "_default";
+    const content = cleanForSpeech(match ? line.slice(match[0].length) : line);
+    if (!(speaker in speakerIndexMap)) {
+      speakerIndexMap[speaker] = speakerCount < 3 ? speakerCount : speakerCount % 3;
+      speakerCount++;
+    }
+    return { voiceIndex: hasSpeakers ? speakerIndexMap[speaker] : 2, content };
+  });
+}
+
+let activeTtsAudio = null;
+
+function speakTextElevenLabs(text) {
+  const queue = buildSpeechQueue(text).filter((item) => item.content.trim());
+  if (!queue.length) {
+    throw new Error("No TTS text to play.");
+  }
+
+  if (activeTtsAudio) {
+    activeTtsAudio.pause();
+    activeTtsAudio.src = "";
+  }
+
+  const audio = new Audio();
+  audio.playsInline = true;
+  activeTtsAudio = audio;
+  let index = 0;
+
+  function playNext() {
+    const item = queue[index++];
+    if (!item) {
+      if (activeTtsAudio === audio) activeTtsAudio = null;
+      return;
+    }
+
+    audio.src = `/api/tts?voiceIndex=${encodeURIComponent(item.voiceIndex)}&text=${encodeURIComponent(item.content)}`;
+    const playPromise = audio.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        if (activeTtsAudio === audio) activeTtsAudio = null;
+        speakTextBrowser(text);
+      });
+    }
+  }
+
+  audio.onended = playNext;
+  audio.onerror = () => {
+    if (activeTtsAudio === audio) activeTtsAudio = null;
+    speakTextBrowser(text);
+  };
+  playNext();
+}
+
 // Priority list of natural-sounding English voices across platforms
 const PREFERRED_VOICES = [
   "Google US English",       // Chrome desktop
@@ -2009,11 +2071,25 @@ function getAudioContext() {
 function unlockAudioContext() {
   const ctx = getAudioContext();
   if (ctx.state === "suspended") ctx.resume();
+  const source = ctx.createBufferSource();
+  source.buffer = ctx.createBuffer(1, 1, 22050);
+  source.connect(ctx.destination);
+  source.start(0);
   return ctx;
 }
 
+function decodeAudioDataCompat(ctx, arrayBuffer) {
+  return new Promise((resolve, reject) => {
+    const copy = arrayBuffer.slice(0);
+    const maybePromise = ctx.decodeAudioData(copy, resolve, reject);
+    if (maybePromise?.then) {
+      maybePromise.then(resolve).catch(reject);
+    }
+  });
+}
+
 async function playAudioBuffer(ctx, arrayBuffer) {
-  const decoded = await ctx.decodeAudioData(arrayBuffer);
+  const decoded = await decodeAudioDataCompat(ctx, arrayBuffer);
   return new Promise((resolve) => {
     const source = ctx.createBufferSource();
     source.buffer = decoded;
@@ -2023,7 +2099,32 @@ async function playAudioBuffer(ctx, arrayBuffer) {
   });
 }
 
-async function speakTextElevenLabs(text, ctx) {
+async function playAudioElement(arrayBuffer) {
+  const blobUrl = URL.createObjectURL(new Blob([arrayBuffer], { type: "audio/mpeg" }));
+  const audio = new Audio(blobUrl);
+  audio.playsInline = true;
+
+  try {
+    await new Promise((resolve, reject) => {
+      audio.onended = resolve;
+      audio.onerror = () => reject(new Error("Audio element playback failed."));
+      const playPromise = audio.play();
+      if (playPromise?.catch) playPromise.catch(reject);
+    });
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+async function playElevenLabsAudio(ctx, arrayBuffer) {
+  try {
+    await playAudioBuffer(ctx, arrayBuffer);
+  } catch {
+    await playAudioElement(arrayBuffer);
+  }
+}
+
+async function speakTextElevenLabsBuffered(text, ctx) {
   const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
   const rawLines = text.split(/\n+/).filter(Boolean);
   const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
@@ -2036,35 +2137,40 @@ async function speakTextElevenLabs(text, ctx) {
     const speaker = m ? m[1].trim() : "_default";
     const content = cleanForSpeech(m ? line.slice(m[0].length) : line);
     if (!(speaker in speakerIndexMap)) {
-      speakerIndexMap[speaker] = speakerCount < 2 ? speakerCount : 0;
+      speakerIndexMap[speaker] = speakerCount < 3 ? speakerCount : speakerCount % 3;
       speakerCount++;
     }
-    return { voiceIndex: hasSpeakers ? speakerIndexMap[speaker] : 0, content };
+    return { voiceIndex: hasSpeakers ? speakerIndexMap[speaker] : 2, content };
   });
+
+  let playedAnyLine = false;
 
   for (const { voiceIndex, content } of queue) {
     if (!content.trim()) continue;
-    try {
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ text: content, voiceIndex }),
-      });
-      if (!res.ok) throw new Error("TTS failed");
-      const arrayBuffer = await res.arrayBuffer();
-      await playAudioBuffer(ctx, arrayBuffer);
-    } catch {
-      // Continue to next line on error
-    }
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ text: content, voiceIndex }),
+    });
+    if (!res.ok) throw new Error("TTS failed");
+    const arrayBuffer = await res.arrayBuffer();
+    await playElevenLabsAudio(ctx, arrayBuffer);
+    playedAnyLine = true;
+  }
+
+  if (!playedAnyLine) {
+    throw new Error("No TTS audio played.");
   }
 }
 
 function speakText(text) {
   if (window.__elevenLabsEnabled) {
-    // iOS fix: unlock Web Audio context synchronously before any async work
-    const ctx = unlockAudioContext();
-    speakTextElevenLabs(text, ctx).catch(() => speakTextBrowser(text));
+    try {
+      speakTextElevenLabs(text);
+    } catch {
+      speakTextBrowser(text);
+    }
     return;
   }
   speakTextBrowser(text);
@@ -2210,14 +2316,15 @@ function renderPlacementQuestion(q) {
   if (q.passage) {
     if (q.skill === "listening") {
       const passageId = `passage-${escapeHtml(q.id)}`;
+      const isListeningCloze = q.type === "gap_fill" && q.passage.includes("___");
       passageHtml = `
         <div class="listening-controls">
           <button type="button" class="listen-button" data-passage-id="${passageId}">
             🔊 Listen
           </button>
-          <span class="listen-hint">Tap to hear the dialogue aloud</span>
+          <span class="listen-hint">${isListeningCloze ? "Listen and fill in the missing words" : "Listen to the dialogue, then answer"}</span>
         </div>
-        <div class="assessment-passage" id="${passageId}" data-text="${escapeHtml(q.passage)}">${formatPassageHtml(q.passage)}</div>`;
+        <div id="${passageId}" data-text="${escapeHtml(q.passage)}" hidden></div>`;
     } else {
       passageHtml = `<div class="assessment-passage">${formatPassageHtml(q.passage)}</div>`;
     }

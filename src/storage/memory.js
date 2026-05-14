@@ -893,7 +893,7 @@ class MemoryStorage {
       .reverse()
       .find((item) => item.studentId === studentId);
     if (!entry) return null;
-    return { feedback: entry.feedback, level: entry.level, priorities: entry.priorities, createdAt: entry.createdAt };
+    return { feedback: entry.feedback, level: entry.level, priorities: entry.priorities, score: entry.score, createdAt: entry.createdAt };
   }
 
   async createLessonRecording({ studentId, audioPath, audioMime, fileSizeBytes }) {

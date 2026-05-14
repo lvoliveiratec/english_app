@@ -7,6 +7,7 @@ english_app/
   src/
     agents/
       placement.js           ← Claude API: generates questions + evaluates placement
+      lesson-analysis.js     ← AssemblyAI transcription + Claude lesson analysis
     server/
       auth.js                ← getSession / getAdminSession / getTeacherSession
       cookies.js             ← session cookie helpers
@@ -19,6 +20,8 @@ english_app/
         account.js           ← GET/PUT account, PUT password
         placement.js         ← GET placement, GET questions, POST placement
         pronunciation.js     ← POST pronunciation-attempts
+        recordings.js        ← POST recording upload, GET recording status
+        tts.js               ← ElevenLabs audio for listening questions
         teacher.js           ← GET summary, POST level-suggestion review
         admin.js             ← admin CRUD + POST level-suggestion review
     storage/
@@ -37,7 +40,7 @@ english_app/
       assessment-grammar.md           ← gap-fill questions by CEFR level
       assessment-vocabulary.md        ← vocabulary ranges and question formats
       assessment-reading.md           ← text samples and comprehension questions
-      assessment-listening.md         ← transcript cloze and dialogue methods
+      assessment-listening.md         ← listening dialogue and comprehension methods
       correction-policy.md            ← how AI Teacher corrects students
       grammar-syllabus.md             ← grammar topics by level
       lesson-patterns.md              ← reusable lesson formats
@@ -81,7 +84,8 @@ english_app/
 |---|---|
 | `server.js` | Creates HTTP server, calls `createStorage()`, delegates to routes |
 | `app.js` | All frontend logic — routing, API calls, DOM rendering |
-| `src/agents/placement.js` | Claude API calls — question generation and evaluation |
+| `src/agents/placement.js` | Claude API calls — placement question generation and evaluation |
+| `src/agents/lesson-analysis.js` | AssemblyAI transcription and Claude lesson transcript analysis |
 | `src/server/routes/` | One file per domain. Each exports `handleXxxRoutes({request, response, parsedUrl, storage})` returning `true` if handled |
 | `src/storage/` | `PostgresStorage` and `MemoryStorage` implement the same interface |
 | `src/security.js` | All crypto — never use raw crypto elsewhere |

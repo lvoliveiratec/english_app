@@ -15,7 +15,8 @@
 ## Phase 2: AI Placement and Level Tracking ✅ Complete
 
 - Placement Agent implemented with Claude Haiku
-- 7-question placement test: grammar, vocabulary, reading, listening
+- 15-question placement test: grammar, vocabulary, reading, listening, speaking
+- Listening section uses three separate hidden dialogue scripts with ElevenLabs audio and comprehension questions
 - Test questions generated dynamically per student profile using CEFR assessment KB
 - Auto-placement after signup using motivation text as writing sample
 - Placement results stored in PostgreSQL (`ai_feedback` table), available across all devices
@@ -42,10 +43,11 @@
 
 ## Phase 5: Pronunciation and Media
 
-- Real audio upload and storage (requires consent + retention design)
+- Class recording upload and AI lesson analysis are started: audio/video can be uploaded, transcribed with AssemblyAI, and analyzed with Claude after the UI consent gate
+- Pronunciation-specific audio upload and scoring still need a dedicated consent, retention, and deletion design
 - Pronunciation Agent: score attempts against the phrase, return error list
 - Pronunciation history stored per student, fed into AI Teacher context
-- Video recording for in-person classes with teacher consent workflow
+- Video recording for in-person classes exists as an upload path, but teacher consent, retention, and deletion policy need hardening
 - Media deletion and retention policies
 
 ## Phase 6: RAG and Contextual Memory

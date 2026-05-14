@@ -1,12 +1,13 @@
 const https = require("node:https");
-const { getSession } = require("../auth");
 const { readRequestBody, sendJson } = require("../http");
 
 // Two natural ElevenLabs voices for dialogue
 const VOICES = [
-  "21m00Tcm4TlvDq8ikWAM", // Rachel — calm female (Agent/professional)
-  "pNInz6obpgDQGcFmaJgB", // Adam — warm male (Tourist/student)
+  process.env.ELEVENLABS_VOICE_AGENT_ID || "EXAVITQu4vr4xnSDxMaL", // Sarah
+  process.env.ELEVENLABS_VOICE_STUDENT_ID || "onwK4e9ZLuTAKqWW03F9", // Daniel
+  process.env.ELEVENLABS_VOICE_NARRATOR_ID || process.env.ELEVENLABS_VOICE_AGENT_ID || "EXAVITQu4vr4xnSDxMaL",
 ];
+const MODEL_ID = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";
 
 function elevenLabsTTS(text, voiceId) {
   return new Promise((resolve, reject) => {
@@ -17,8 +18,15 @@ function elevenLabsTTS(text, voiceId) {
 
     const body = JSON.stringify({
       text,
-      model_id: "eleven_turbo_v2_5",
-      voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
+      model_id: MODEL_ID,
+      language_code: "en",
+      voice_settings: {
+        stability: 0.28,
+        similarity_boost: 0.9,
+        style: 0.68,
+        use_speaker_boost: true,
+        speed: 0.92,
+      },
     });
 
     const options = {
@@ -50,28 +58,48 @@ function elevenLabsTTS(text, voiceId) {
   });
 }
 
+async function ttsWithFallback(text, preferredIndex) {
+  const orderedVoiceIds = [
+    VOICES[preferredIndex],
+    ...VOICES.filter((voiceId, index) => index !== preferredIndex && voiceId),
+  ];
+  let lastError;
+
+  for (const voiceId of orderedVoiceIds) {
+    try {
+      return await elevenLabsTTS(text, voiceId);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 async function handleTtsRoutes({ request, response, parsedUrl }) {
-  if (request.method === "POST" && parsedUrl.pathname === "/api/tts") {
-    const session = await getSession(request, null); // no storage needed
-    // Allow any signed-in user or skip auth for this endpoint
-    // (audio is generated from non-sensitive placement question text)
-
-    const body = await readRequestBody(request);
+  if (
+    (request.method === "POST" || request.method === "GET") &&
+    parsedUrl.pathname === "/api/tts"
+  ) {
+    const body = request.method === "POST" ? await readRequestBody(request) : {};
     const text = (body.text || "").toString().trim();
-    const voiceIndex = Math.min(Math.max(Number(body.voiceIndex) || 0, 0), 1);
+    const queryText = (parsedUrl.searchParams.get("text") || "").toString().trim();
+    const selectedText = text || queryText;
+    const requestedVoiceIndex = body.voiceIndex ?? parsedUrl.searchParams.get("voiceIndex");
+    const voiceIndex = Math.min(Math.max(Number(requestedVoiceIndex) || 0, 0), VOICES.length - 1);
 
-    if (!text) {
+    if (!selectedText) {
       sendJson(response, 400, { error: "text is required." });
       return true;
     }
 
-    if (text.length > 1000) {
+    if (selectedText.length > 1000) {
       sendJson(response, 400, { error: "text is too long (max 1000 chars)." });
       return true;
     }
 
     try {
-      const audio = await elevenLabsTTS(text, VOICES[voiceIndex]);
+      const audio = await ttsWithFallback(selectedText, voiceIndex);
       response.writeHead(200, {
         "Content-Type": "audio/mpeg",
         "Content-Length": audio.length,

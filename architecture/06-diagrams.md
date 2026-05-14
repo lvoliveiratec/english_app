@@ -14,9 +14,11 @@ flowchart LR
   Web --> API[Backend API]
   API --> DB[(Postgres)]
   API --> Memory[In-Memory Fallback]
-  API -. future .-> Storage[(Object Storage)]
+  API --> LocalUploads[(Local Uploads)]
   API -. future .-> RAG[RAG Retrieval Layer]
-  API -. future .-> AI[AI Orchestration]
+  API --> AI[AI Orchestration]
+  API --> TTS[ElevenLabs TTS]
+  API --> AssemblyAI[AssemblyAI Transcription]
 
   DB --> Users[Users And Profiles]
   DB --> Assignments[Teacher Assignments And Invites]
@@ -24,9 +26,10 @@ flowchart LR
   DB --> Attempts[Pronunciation Attempts]
   DB --> Progress[Lesson Progress]
 
-  Storage -. future .-> Workers[Media Workers]
-  Workers -. future .-> Transcripts[Transcripts And Metrics]
-  Transcripts -. future .-> DB
+  LocalUploads --> AssemblyAI
+  AssemblyAI --> Transcripts[Transcripts]
+  Transcripts --> AI
+  AI --> DB
   Transcripts -. future .-> RAG
 
   RAG -. future .-> EnglishKB[English KB]
@@ -36,6 +39,8 @@ flowchart LR
 
   AI -. future .-> Coach[AI Coach]
   AI -. future .-> TeacherAgent[AI Teacher Agent]
+  AI --> Placement[Placement Agent]
+  AI --> LessonAnalysis[Lesson Analysis Agent]
 ```
 
 ## Public To Student Flow
@@ -57,9 +62,13 @@ flowchart TD
   Login --> Dashboard
   Dashboard --> Baseline[Placement Baseline]
   Dashboard --> Pronunciation[Read Out Loud Practice]
+  Dashboard --> Recording[Class Recording Analysis]
   Dashboard --> Lessons[Lessons Page]
   Dashboard --> Account[Account Settings]
   Pronunciation --> Attempt[Pronunciation Attempt Record]
+  Recording --> Transcript[AssemblyAI Transcript]
+  Transcript --> LessonAnalysis[Claude Lesson Analysis]
+  LessonAnalysis --> Dashboard
   Lessons --> Feedback[AI Teacher Feedback]
   Feedback --> Memory[Student Learning Signals]
   Memory --> Dashboard
@@ -75,6 +84,9 @@ flowchart TD
   Router --> Admin[admin routes]
   Router --> Teacher[teacher routes]
   Router --> Pronunciation[pronunciation routes]
+  Router --> Placement[placement routes]
+  Router --> Recordings[recordings routes]
+  Router --> TTS[tts routes]
   Router --> Static[static file serving]
 
   Auth --> Storage[src/storage]
@@ -82,6 +94,11 @@ flowchart TD
   Admin --> Storage
   Teacher --> Storage
   Pronunciation --> Storage
+  Placement --> Storage
+  Recordings --> Storage
+  Recordings --> AssemblyAI[AssemblyAI]
+  Recordings --> Claude[Claude Lesson Analysis]
+  TTS --> ElevenLabs[ElevenLabs]
 
   Storage --> Pg[PostgreSQL adapter]
   Storage --> Mem[Memory adapter]
@@ -165,17 +182,14 @@ flowchart TD
   Attempt --> DB[(Postgres)]
   Attempt --> Status[recorded_locally]
 
-  Consent[Future Consent Captured] --> Upload[Future Signed Upload]
-  Upload --> RawMedia[(Object Storage)]
-  RawMedia --> Job[Processing Job]
-  Job --> Normalize[Normalize Audio/Video]
-  Normalize --> Transcribe[Transcription]
-  Normalize --> Pronunciation[Pronunciation Metrics]
-  Normalize --> Derivatives[Thumbnails/Waveforms/Compressed Media]
-  Transcribe --> Metadata[(Database Metadata)]
-  Pronunciation --> Metadata
-  Derivatives --> ProcessedStorage[(Processed Media Storage)]
-  Metadata --> RAGIndex[RAG Index When Allowed]
+  Consent[UI Consent Checkbox] --> Upload[Class Audio/Video Upload]
+  Upload --> LocalFile[(uploads/)]
+  Upload --> RecordingRow[lesson_recordings row]
+  LocalFile --> Transcribe[AssemblyAI Transcription]
+  Transcribe --> Analyze[Claude Lesson Analysis]
+  Analyze --> Metadata[(Database Metadata)]
+  Metadata --> StudentResult[Student Analysis Result]
+  Metadata -. future .-> RAGIndex[RAG Index When Allowed]
 ```
 
 ## Repository Structure

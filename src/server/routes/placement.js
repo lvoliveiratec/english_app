@@ -34,15 +34,7 @@ async function handlePlacementRoutes({ request, response, parsedUrl, storage }) 
 
     const placements = await storage.getAllPlacements(session.user.id);
 
-    const scored = placements.map((p) => {
-      const priorities = p.priorities || [];
-      const mistakeCount = priorities.filter((r) => r.startsWith("current:") || r.toLowerCase().includes("error") || r.toLowerCase().includes("mistake")).length;
-      // Derive a 0-10 score from the placement level stored in the latest placement result
-      // We use priorities count and feedback as signal — 10 = all correct, lower for more mistakes
-      return { ...p, score: null };
-    });
-
-    sendJson(response, 200, { placements: scored });
+    sendJson(response, 200, { placements });
     return true;
   }
 

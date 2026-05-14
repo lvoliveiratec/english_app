@@ -12,7 +12,7 @@ Agents are not separate deployed services — they are modules within the backen
 | AI Coach | `agents/ai-coach.md` | ⏳ UI placeholder only |
 | AI Teacher | `agents/ai-teacher.md` | ⏳ not yet wired |
 | Pronunciation Agent | `agents/pronunciation-agent.md` | ⏳ not yet wired |
-| Teacher Summary Agent | `agents/teacher-summary-agent.md` | ⏳ not yet wired |
+| Teacher Summary / Lesson Analysis | `agents/teacher-summary-agent.md` | ✅ lesson transcript analysis in `src/agents/lesson-analysis.js`; dashboard summaries not yet wired |
 
 ---
 
@@ -24,11 +24,12 @@ Agents are not separate deployed services — they are modules within the backen
 
 ### `generatePlacementQuestions({ profile, selfReportedLevel })`
 - Loads 4 assessment KB files as a cached system prompt
-- Asks Claude Haiku to generate 7 questions:
-  - 2 grammar (gap-fill, at reported level and one below)
-  - 2 vocabulary (gap-fill + multiple choice)
-  - 2 reading (shared passage, detail + inference)
-  - 1 listening (dialogue cloze)
+- Asks Claude Haiku to generate 15 questions:
+  - 4 grammar checks
+  - 3 vocabulary checks
+  - 3 reading checks from a shared passage
+  - 3 listening comprehension checks from three different hidden dialogue scripts
+  - 2 speaking checks
 - Returns `{ questions: [...] }` with type, skill, passage, prompt, options per question
 
 ### `runPlacementAgent({ profile, level, goal, questions, answers, writing })`
@@ -36,7 +37,7 @@ Agents are not separate deployed services — they are modules within the backen
   - **Full test**: receives `questions` + `answers` → evaluates all answers together
   - **Writing sample**: receives `writing` → used for auto-placement after signup
 - Loads CEFR guide + assessment KB as cached system prompt
-- Returns `{ feedback, level, metrics, priorities }`
+- Returns `{ feedback, level, score, metrics, priorities }`
 - `level` is one of: Beginner, Elementary, Intermediate, Upper Intermediate, Advanced
 - `metrics` are deterministic from level: `{ fluency, listening, pronunciation }`
 
@@ -79,19 +80,19 @@ Owns pronunciation scoring and feedback.
 
 **Planned outputs:** score, specific sound errors, remediation suggestions.
 
-**Current state:** Pronunciation attempt metadata is stored in `pronunciation_attempts`. Audio upload pipeline not yet built.
+**Current state:** Pronunciation attempt metadata is stored in `pronunciation_attempts`. Pronunciation-specific scoring is not yet wired. The separate class-recording pipeline can upload audio/video for lesson transcript analysis.
 
 ---
 
-## Teacher Summary Agent (planned)
+## Lesson Analysis / Teacher Summary Agent (partial)
 
-Owns teacher-facing progress summaries.
+Owns teacher-facing progress summaries and class transcript analysis.
 
 **Planned inputs:** assigned student profiles, lesson progress, placement history, recurring mistakes, pronunciation data.
 
 **Planned outputs:** student summary card per student, suggested next class focus, flagged patterns.
 
-**Current state:** Teacher dashboard shows hardcoded next actions. Not connected to Claude.
+**Current state:** `src/agents/lesson-analysis.js` transcribes uploaded class recordings with AssemblyAI and analyzes transcripts with Claude. The teacher dashboard still shows operational summaries from storage rather than generated long-term progress summaries.
 
 ---
 

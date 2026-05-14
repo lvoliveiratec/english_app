@@ -92,12 +92,24 @@ This document records what we are building and why each step was taken.
 - Improved mobile layout stability across teacher/admin/student pages and verified no horizontal overflow at common mobile widths.
 - Used a Cloudflare Quick Tunnel for mobile device testing against the local app.
 
+## 2026-05-14
+
+- Expanded the Claude placement test to 15 questions across grammar, vocabulary, reading, listening, and speaking.
+- Changed placement listening to three hidden dialogue comprehension checks with different scripts and prompts.
+- Added score persistence for placement results and removed the placeholder null score in test history.
+- Added student, teacher, and admin placement-test history/detail views.
+- Added ElevenLabs TTS for placement listening audio, including mobile/iPhone-compatible playback through `GET /api/tts`.
+- Added configurable ElevenLabs voice IDs through `.env` and `.env.example`.
+- Added class recording upload/status routes.
+- Added `src/agents/lesson-analysis.js` to transcribe class recordings with AssemblyAI and analyze transcripts with Claude.
+- Added frontend polling and rendering for class recording analysis results: summary, mistakes, vocabulary, and recommendations.
+
 ## Important Decisions
 
-- The current prototype does not upload raw audio or video to any server.
-- Pronunciation recording now creates backend metadata when the API is available, but the raw audio still stays in the browser until authorized upload storage is implemented.
+- Pronunciation recording creates backend metadata when the API is available, but raw pronunciation audio still stays in the browser until a dedicated consent/upload/scoring pipeline is implemented.
+- Class recordings are a separate lesson-analysis pipeline: after the UI consent gate, audio/video can be uploaded, transcribed, and analyzed.
 - Recordings need clear consent from both student and teacher.
-- Before using real AI with audio/video, the app needs a backend, authentication, privacy policies, and retention/deletion rules.
+- Before production use of audio/video, the app still needs stronger privacy policies, retention/deletion rules, and audit controls.
 - Student-specific AI memory must be permissioned and isolated per student.
 - Raw media should be treated as sensitive data; AI should prefer derived artifacts such as transcripts, summaries, and pronunciation metrics when possible.
 - Raw audio should not be embedded directly into RAG. Store raw media in object storage, store transcripts/derived metrics in the database, and index only permissioned text/summary artifacts.
