@@ -786,6 +786,51 @@ input {
   content: "📎";
 }
 
+.test-history-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.test-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.test-date {
+  font-size: 0.92rem;
+  color: var(--muted);
+  margin: 0.15rem 0 0;
+}
+
+.test-feedback {
+  margin: 0 0 0.75rem;
+  font-size: 0.97rem;
+  line-height: 1.6;
+}
+
+.test-score {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.test-score span {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.score-high { color: var(--green); }
+.score-mid  { color: var(--gold); }
+.score-low  { color: var(--coral); }
+
 .lesson-analysis-panel {
   margin-top: 1.25rem;
   padding: 1.1rem;

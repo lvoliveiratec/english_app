@@ -57,9 +57,10 @@ Rules for evaluation:
 - Trust the test results over the self-reported level
 
 You MUST respond with valid JSON only — no markdown, no extra text, nothing before or after the JSON object:
-{"feedback":"2-3 encouraging sentences describing the result","level":"Beginner","priorities":["priority 1","priority 2","priority 3"]}
+{"feedback":"2-3 encouraging sentences describing the result","level":"Beginner","score":6,"priorities":["priority 1","priority 2","priority 3"]}
 
-The level field must be exactly one of: Beginner, Elementary, Intermediate, Upper Intermediate, Advanced`;
+The level field must be exactly one of: Beginner, Elementary, Intermediate, Upper Intermediate, Advanced
+The score field must be an integer from 0 to 10 (10 = perfect, 0 = all wrong). Base it on how many of the 8 questions were answered correctly.`;
 
 const levelMetrics = {
   Beginner: { fluency: 12, listening: 18, pronunciation: 10 },

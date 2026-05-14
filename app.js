@@ -17,6 +17,7 @@ const teacherNavLink = document.querySelector("#teacherNavLink");
 const accountNavLink = document.querySelector("#accountNavLink");
 const courseGrid = document.querySelector("#courseGrid");
 const lessonGrid = document.querySelector("#lessonGrid");
+const myTestsContent = document.querySelector("#myTestsContent");
 const studentNavLinks = [...document.querySelectorAll("[data-student-nav]")];
 const homeCoachGreeting = document.querySelector("#homeCoachGreeting");
 const homeCoachSummary = document.querySelector("#homeCoachSummary");
@@ -393,6 +394,10 @@ function setRoute(routeName) {
 
   if (safeRoute === "teacher") {
     renderTeacherSummary();
+  }
+
+  if (safeRoute === "my-tests") {
+    renderMyTests();
   }
 
   if (safeRoute === "account") {
@@ -927,6 +932,55 @@ function getLocalTeacherSummary() {
       "Confirm consent before any class recording.",
     ],
   };
+}
+
+const levelScores = {
+  Beginner: 2,
+  Elementary: 4,
+  Intermediate: 6,
+  "Upper Intermediate": 8,
+  Advanced: 10,
+};
+
+async function renderMyTests() {
+  if (!isStudent()) return;
+  myTestsContent.innerHTML = `<p class="feedback-text">Loading your test history…</p>`;
+
+  try {
+    const { placements } = await apiRequest("/api/my-tests");
+
+    if (!placements || placements.length === 0) {
+      myTestsContent.innerHTML = `<p class="feedback-text">No placement tests yet. Take your first test from the dashboard.</p>`;
+      return;
+    }
+
+    myTestsContent.innerHTML = placements
+      .map((p) => {
+        const date = new Date(p.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const score = typeof p.score === "number" ? p.score : null;
+        const scoreHtml = score !== null
+          ? `<div class="test-score ${score >= 7 ? "score-high" : score >= 4 ? "score-mid" : "score-low"}">${score}<span>/10</span></div>`
+          : "";
+        const priorities = (p.priorities || [])
+          .map((pr) => `<li>${escapeHtml(pr)}</li>`)
+          .join("");
+
+        return `<div class="test-history-card">
+          <div class="test-history-header">
+            <div>
+              <p class="eyebrow">Placement test</p>
+              <p class="test-date">${escapeHtml(date)}</p>
+            </div>
+            ${scoreHtml}
+          </div>
+          <p class="test-feedback">${escapeHtml(p.feedback || "")}</p>
+          ${priorities ? `<ul class="activity-list">${priorities}</ul>` : ""}
+        </div>`;
+      })
+      .join("");
+  } catch (error) {
+    myTestsContent.innerHTML = `<p class="feedback-text error">Could not load test history: ${escapeHtml(error.message)}</p>`;
+  }
 }
 
 async function renderTeacherSummary() {
@@ -1799,19 +1853,71 @@ function speakText(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(cleanForSpeech(text));
-  utterance.lang = "en-US";
-  utterance.rate = 0.85;
-  utterance.pitch = 1.0;
-
   const doSpeak = () => {
     const voices = window.speechSynthesis.getVoices();
-    const voice = pickBestVoice(voices);
-    if (voice) utterance.voice = voice;
-    window.speechSynthesis.speak(utterance);
+    const lines = cleanForSpeech(text).split(/\n+/).filter(Boolean);
+
+    // Detect if dialogue has multiple speakers (e.g. "Travel Agent: ..." / "Tourist: ...")
+    const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s+/;
+    const hasSpeakers = lines.some((l) => speakerPattern.test(l));
+
+    if (!hasSpeakers || lines.length <= 1) {
+      // Single voice
+      const utterance = new SpeechSynthesisUtterance(lines.join(". "));
+      utterance.lang = "en-US";
+      utterance.rate = 0.85;
+      const voice = pickBestVoice(voices);
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+      return;
+    }
+
+    // Two distinct voices for two speakers
+    const voiceA = pickBestVoice(voices) || voices.find((v) => v.lang.startsWith("en"));
+    const voiceB =
+      voices.find(
+        (v) =>
+          v !== voiceA &&
+          v.lang.startsWith("en") &&
+          (v.name.includes("Daniel") || v.name.includes("Male") || v.name.includes("Fred") || v.name.includes("Alex")),
+      ) || voices.find((v) => v !== voiceA && v.lang.startsWith("en"));
+
+    const speakerMap = {};
+    let speakerCount = 0;
+
+    function getVoiceForSpeaker(name) {
+      if (!speakerMap[name]) {
+        speakerCount++;
+        speakerMap[name] = speakerCount === 1 ? voiceA : voiceB;
+      }
+      return speakerMap[name];
+    }
+
+    const queue = lines.map((line) => {
+      const m = line.match(speakerPattern);
+      const speaker = m ? m[1].trim() : "_default";
+      const content = m ? line.slice(m[0].length) : line;
+      return { speaker, content };
+    });
+
+    let idx = 0;
+    function next() {
+      if (idx >= queue.length) return;
+      const { speaker, content } = queue[idx++];
+      const u = new SpeechSynthesisUtterance(content);
+      u.lang = "en-US";
+      const v = getVoiceForSpeaker(speaker);
+      if (v) u.voice = v;
+      // Alternate pitch/rate to distinguish speakers even when only one voice is available
+      const isSecond = Object.keys(speakerMap).indexOf(speaker) === 1;
+      u.rate = isSecond ? 0.9 : 0.8;
+      u.pitch = isSecond ? 1.2 : 0.85;
+      u.onend = next;
+      window.speechSynthesis.speak(u);
+    }
+    next();
   };
 
-  // iOS loads voices asynchronously — wait for them if not ready yet
   const voices = window.speechSynthesis.getVoices();
   if (voices.length > 0) {
     doSpeak();
@@ -1929,7 +2035,21 @@ function renderPlacementQuestion(q) {
       )
       .join("");
   } else {
-    input = `<input class="assessment-text-input" type="text" name="${escapeHtml(q.id)}" placeholder="Your answer" autocomplete="off">`;
+    // Detect multiple blanks (___) in grammar/vocabulary prompts
+    const blankCount = (q.prompt.match(/___/g) || []).length;
+    if (blankCount > 1) {
+      input = Array.from({ length: blankCount }, (_, i) =>
+        `<label class="listening-blank-label">
+          Blank ${i + 1}
+          <input class="assessment-text-input" type="text"
+            name="${escapeHtml(q.id)}_b${i + 1}"
+            placeholder="Fill in blank ${i + 1}"
+            autocomplete="off">
+        </label>`,
+      ).join("");
+    } else {
+      input = `<input class="assessment-text-input" type="text" name="${escapeHtml(q.id)}" placeholder="Your answer" autocomplete="off">`;
+    }
   }
 
   return `<div class="assessment-question">

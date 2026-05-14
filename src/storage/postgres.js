@@ -1106,6 +1106,23 @@ class PostgresStorage {
     }
   }
 
+  async getAllPlacements(studentId) {
+    const result = await this.pool.query(
+      `select af.id, af.summary as feedback, af.recommendations as priorities,
+              af.created_at
+       from ai_feedback af
+       where af.student_id = $1 and af.source_type = 'placement'
+       order by af.created_at desc`,
+      [studentId],
+    );
+    return result.rows.map((row) => ({
+      id: row.id,
+      feedback: row.feedback,
+      priorities: row.priorities || [],
+      createdAt: row.created_at,
+    }));
+  }
+
   async getLatestPlacement(studentId) {
     const result = await this.pool.query(
       `select af.summary as feedback, af.recommendations as priorities,

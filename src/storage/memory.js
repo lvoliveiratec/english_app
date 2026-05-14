@@ -876,6 +876,13 @@ class MemoryStorage {
     this.state.placements.push({ studentId, feedback, level, priorities, createdAt: nowIso() });
   }
 
+  async getAllPlacements(studentId) {
+    return [...(this.state.placements || [])]
+      .filter((p) => p.studentId === studentId)
+      .reverse()
+      .map((p) => ({ id: p.studentId + p.createdAt, feedback: p.feedback, priorities: p.priorities, createdAt: p.createdAt }));
+  }
+
   async getLatestPlacement(studentId) {
     const entry = [...this.state.placements]
       .reverse()
