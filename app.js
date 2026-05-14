@@ -2370,7 +2370,7 @@ async function pollRecordingStatus(recordingId, intervalMs = 4000, maxAttempts =
       if (rec.processingStatus === "failed") throw new Error("Analysis failed on the server.");
       const statusLabels = {
         uploaded: "Uploading…",
-        transcribing: "Transcribing audio with Whisper…",
+        transcribing: "Transcribing audio with AssemblyAI…",
         transcribed: "Transcript ready. Analyzing with AI Teacher…",
         analyzing: "AI Teacher is analyzing the lesson…",
       };
@@ -2446,7 +2446,7 @@ async function uploadAndAnalyzeBlob(blob, fileName) {
     return data;
   });
 
-  lessonAnalysisStatus.textContent = "Upload complete. Transcribing with Whisper…";
+  lessonAnalysisStatus.textContent = "Upload complete. Transcribing audio with AssemblyAI…";
   const analyzed = await pollRecordingStatus(recordingId);
 
   if (analyzed?.analysis) {
