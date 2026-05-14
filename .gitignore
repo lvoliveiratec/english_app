@@ -10,4 +10,9 @@ coverage/
 playwright-report/
 test-results/
 .local-tools/
-uploads/*.webm\nuploads/*.mp4\nuploads/*.m4a\nuploads/*.wav\nuploads/*.ogg
+uploads/*.webm
+uploads/*.mp4
+uploads/*.m4a
+uploads/*.wav
+uploads/*.ogg
+uploads/*.mp3
