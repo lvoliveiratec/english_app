@@ -7,26 +7,26 @@ const { transcribeAudio, analyzeLessonTranscript } = require("../../agents/lesso
 
 const uploadsDir = path.join(__dirname, "../../../uploads");
 
-const SUPPORTED_MIME = new Set([
-  "audio/webm",
-  "audio/ogg",
-  "audio/mp4",
-  "audio/m4a",
-  "audio/mpeg",
-  "audio/wav",
-  "video/webm",
-  "video/mp4",
-]);
+// Accept any audio or video MIME — Whisper handles all common formats.
+// iPhone sends audio/x-m4a, audio/mp4 or video/quicktime depending on the app.
+function isAcceptedMime(mime) {
+  return mime.startsWith("audio/") || mime.startsWith("video/");
+}
 
 const MIME_TO_EXT = {
   "audio/webm": "webm",
   "audio/ogg": "ogg",
   "audio/mp4": "m4a",
   "audio/m4a": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "m4a",
   "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
   "audio/wav": "wav",
+  "audio/x-wav": "wav",
   "video/webm": "webm",
   "video/mp4": "mp4",
+  "video/quicktime": "mp4",
 };
 
 async function handleRecordingRoutes({ request, response, parsedUrl, storage }) {
@@ -45,8 +45,8 @@ async function handleRecordingRoutes({ request, response, parsedUrl, storage }) 
 
     const mimeType = (request.headers["content-type"] || "audio/webm").split(";")[0].trim();
 
-    if (!SUPPORTED_MIME.has(mimeType)) {
-      sendJson(response, 400, { error: `Unsupported audio format: ${mimeType}` });
+    if (!isAcceptedMime(mimeType)) {
+      sendJson(response, 400, { error: `Unsupported format: ${mimeType}. Please upload an audio or video file.` });
       return true;
     }
 
