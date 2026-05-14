@@ -1127,6 +1127,128 @@ class PostgresStorage {
     };
   }
 
+  async createLessonRecording({ studentId, audioPath, audioMime, fileSizeBytes }) {
+    const result = await this.pool.query(
+      `insert into lesson_recordings (student_id, audio_path, audio_mime, file_size_bytes, processing_status)
+       values ($1, $2, $3, $4, 'uploaded')
+       returning id, student_id, audio_path, audio_mime, file_size_bytes, processing_status, created_at`,
+      [studentId, audioPath, audioMime, fileSizeBytes],
+    );
+    return this.mapRecording(result.rows[0]);
+  }
+
+  async getLessonRecording(recordingId) {
+    const result = await this.pool.query(
+      `select id, student_id, teacher_id, audio_path, audio_mime, duration_seconds,
+              file_size_bytes, transcript, processing_status, analysis_json, created_at
+       from lesson_recordings where id = $1`,
+      [recordingId],
+    );
+    return result.rows[0] ? this.mapRecording(result.rows[0]) : null;
+  }
+
+  async updateLessonRecording(recordingId, { processingStatus, transcript, analysisJson } = {}) {
+    const updates = ["updated_at = now()"];
+    const params = [recordingId];
+
+    if (processingStatus !== undefined) {
+      params.push(processingStatus);
+      updates.push(`processing_status = $${params.length}`);
+    }
+    if (transcript !== undefined) {
+      params.push(transcript);
+      updates.push(`transcript = $${params.length}`);
+    }
+    if (analysisJson !== undefined) {
+      params.push(analysisJson);
+      updates.push(`analysis_json = $${params.length}`);
+    }
+
+    await this.pool.query(
+      `update lesson_recordings set ${updates.join(", ")} where id = $1`,
+      params,
+    );
+  }
+
+  async saveRecordingAnalysis(recordingId, studentId, analysis) {
+    await this.updateLessonRecording(recordingId, { analysisJson: JSON.stringify(analysis) });
+    const summary = [
+      analysis.summary || "",
+      analysis.progressNote ? `Progress: ${analysis.progressNote}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const recommendations = [
+      ...(analysis.practiceRecommendations || []),
+      ...(analysis.mainTopics || []).map((t) => `Topic covered: ${t}`),
+      ...(analysis.newVocabulary || []).map((w) => `New word: ${w}`),
+    ];
+
+    await this.pool.query(
+      `insert into ai_feedback (student_id, source_type, source_id, summary, recommendations)
+       values ($1, 'lesson_recording', $2, $3, $4)`,
+      [studentId, recordingId, summary, recommendations],
+    );
+
+    if (analysis.studentMistakes?.length > 0) {
+      const mistakeSummary = analysis.studentMistakes
+        .map((m) => `${m.type}: "${m.example}" → "${m.correction}"`)
+        .join("; ");
+      await this.pool.query(
+        `insert into ai_feedback (student_id, source_type, source_id, summary, recommendations)
+         values ($1, 'lesson_mistakes', $2, $3, $4)`,
+        [studentId, recordingId, mistakeSummary, analysis.teacherFocus || []],
+      );
+    }
+  }
+
+  async getTeacherForStudent(studentId) {
+    const result = await this.pool.query(
+      `select u.id, tp.full_name, tp.specialty
+       from teacher_student_assignments tsa
+       join users u on u.id = tsa.teacher_id
+       join teacher_profiles tp on tp.user_id = tsa.teacher_id
+       where tsa.student_id = $1 and tsa.status = 'active'
+       limit 1`,
+      [studentId],
+    );
+    return result.rows[0] || null;
+  }
+
+  async getLatestLessonAnalysis(studentId) {
+    const result = await this.pool.query(
+      `select af.summary, af.recommendations, af.created_at, lr.audio_mime, lr.duration_seconds
+       from ai_feedback af
+       join lesson_recordings lr on lr.id = af.source_id
+       where af.student_id = $1 and af.source_type = 'lesson_recording'
+       order by af.created_at desc
+       limit 1`,
+      [studentId],
+    );
+    return result.rows[0] || null;
+  }
+
+  mapRecording(row) {
+    let analysis = null;
+    try {
+      if (row.analysis_json) analysis = JSON.parse(row.analysis_json);
+    } catch {}
+    return {
+      id: row.id,
+      studentId: row.student_id,
+      teacherId: row.teacher_id || null,
+      audioPath: row.audio_path,
+      audioMime: row.audio_mime,
+      durationSeconds: row.duration_seconds || null,
+      fileSizeBytes: row.file_size_bytes || null,
+      transcript: row.transcript || null,
+      processingStatus: row.processing_status,
+      analysis,
+      createdAt: row.created_at,
+    };
+  }
+
   mapAddress(address) {
     return {
       line1: address.line1 || "",

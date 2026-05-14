@@ -618,8 +618,34 @@
                 </div>
                 <video class="preview-video" id="classPreview" playsinline muted></video>
                 <p class="feedback-text" id="classFeedback">
-                  The recording stays only in the browser in this prototype.
+                  The recording stays only in the browser until you upload it.
                 </p>
+                <div id="uploadRecordingSection" hidden>
+                  <button class="primary-action" type="button" id="uploadRecordingButton">
+                    Upload and analyze lesson
+                  </button>
+                </div>
+                <div class="lesson-analysis-panel" id="lessonAnalysisPanel" hidden>
+                  <p class="eyebrow">Lesson analysis</p>
+                  <p id="lessonAnalysisStatus" class="feedback-text"></p>
+                  <div id="lessonAnalysisResult" hidden>
+                    <p id="lessonAnalysisSummary" class="lesson-summary"></p>
+                    <div class="lesson-analysis-grid">
+                      <div id="lessonMistakesSection" hidden>
+                        <p class="eyebrow">Mistakes to review</p>
+                        <ul id="lessonMistakesList" class="activity-list"></ul>
+                      </div>
+                      <div id="lessonVocabSection" hidden>
+                        <p class="eyebrow">New vocabulary</p>
+                        <ul id="lessonVocabList" class="activity-list"></ul>
+                      </div>
+                    </div>
+                    <div id="lessonRecommendationsSection" hidden>
+                      <p class="eyebrow">Practice recommendations</p>
+                      <ul id="lessonRecommendationsList" class="activity-list"></ul>
+                    </div>
+                  </div>
+                </div>
               </section>
             </div>
 

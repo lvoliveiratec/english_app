@@ -58,6 +58,18 @@ const videoClassButton = document.querySelector("#videoClassButton");
 const stopClassButton = document.querySelector("#stopClassButton");
 const classPreview = document.querySelector("#classPreview");
 const classFeedback = document.querySelector("#classFeedback");
+const uploadRecordingSection = document.querySelector("#uploadRecordingSection");
+const uploadRecordingButton = document.querySelector("#uploadRecordingButton");
+const lessonAnalysisPanel = document.querySelector("#lessonAnalysisPanel");
+const lessonAnalysisStatus = document.querySelector("#lessonAnalysisStatus");
+const lessonAnalysisResult = document.querySelector("#lessonAnalysisResult");
+const lessonAnalysisSummary = document.querySelector("#lessonAnalysisSummary");
+const lessonMistakesSection = document.querySelector("#lessonMistakesSection");
+const lessonMistakesList = document.querySelector("#lessonMistakesList");
+const lessonVocabSection = document.querySelector("#lessonVocabSection");
+const lessonVocabList = document.querySelector("#lessonVocabList");
+const lessonRecommendationsSection = document.querySelector("#lessonRecommendationsSection");
+const lessonRecommendationsList = document.querySelector("#lessonRecommendationsList");
 const refreshAdminButton = document.querySelector("#refreshAdminButton");
 const refreshTeacherButton = document.querySelector("#refreshTeacherButton");
 const teacherGreeting = document.querySelector("#teacherGreeting");
@@ -1501,7 +1513,11 @@ async function startClassRecording(kind) {
       const blob = new Blob(state.chunks, { type });
       const minutes = Math.max(1, Math.round(blob.size / 85000));
 
-      classFeedback.textContent = `Recording finished. Local demo ready for analysis: about ${minutes} min of captured material.`;
+      state.classRecordingBlob = blob;
+      classFeedback.textContent = `Recording ready — about ${minutes} min captured. Upload it to analyze the lesson.`;
+      uploadRecordingSection.hidden = false;
+      lessonAnalysisPanel.hidden = true;
+
       classPreview.classList.remove("active");
       classPreview.srcObject = null;
       state.mediaStream.getTracks().forEach((track) => track.stop());
@@ -2045,6 +2061,100 @@ recordVoiceButton.addEventListener("click", recordVoiceSample);
 audioClassButton.addEventListener("click", () => startClassRecording("audio"));
 videoClassButton.addEventListener("click", () => startClassRecording("video"));
 stopClassButton.addEventListener("click", stopClassRecording);
+
+async function pollRecordingStatus(recordingId, intervalMs = 4000, maxAttempts = 30) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    try {
+      const rec = await apiRequest(`/api/recordings/${recordingId}`);
+      if (rec.processingStatus === "analyzed") return rec;
+      if (rec.processingStatus === "failed") throw new Error("Analysis failed on the server.");
+      const statusLabels = {
+        uploaded: "Uploading…",
+        transcribing: "Transcribing audio with Whisper…",
+        transcribed: "Transcript ready. Analyzing with AI Teacher…",
+        analyzing: "AI Teacher is analyzing the lesson…",
+      };
+      lessonAnalysisStatus.textContent = statusLabels[rec.processingStatus] || "Processing…";
+    } catch (error) {
+      throw error;
+    }
+  }
+  throw new Error("Analysis is taking longer than expected. Please try again later.");
+}
+
+function renderLessonAnalysis(analysis) {
+  const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+
+  lessonAnalysisSummary.textContent = parsed.summary || "";
+
+  if (parsed.studentMistakes?.length > 0) {
+    lessonMistakesList.innerHTML = parsed.studentMistakes
+      .map((m) => `<li><strong>${escapeHtml(m.type)}:</strong> "${escapeHtml(m.example)}" → <em>${escapeHtml(m.correction)}</em>${m.note ? ` — ${escapeHtml(m.note)}` : ""}</li>`)
+      .join("");
+    lessonMistakesSection.hidden = false;
+  }
+
+  if (parsed.newVocabulary?.length > 0) {
+    lessonVocabList.innerHTML = parsed.newVocabulary
+      .map((w) => `<li>${escapeHtml(w)}</li>`)
+      .join("");
+    lessonVocabSection.hidden = false;
+  }
+
+  if (parsed.practiceRecommendations?.length > 0) {
+    lessonRecommendationsList.innerHTML = parsed.practiceRecommendations
+      .map((r) => `<li>${escapeHtml(r)}</li>`)
+      .join("");
+    lessonRecommendationsSection.hidden = false;
+  }
+
+  lessonAnalysisResult.hidden = false;
+}
+
+uploadRecordingButton.addEventListener("click", async () => {
+  const blob = state.classRecordingBlob;
+  if (!blob) return;
+
+  uploadRecordingButton.disabled = true;
+  uploadRecordingSection.hidden = true;
+  lessonAnalysisPanel.hidden = false;
+  lessonAnalysisResult.hidden = true;
+  lessonMistakesSection.hidden = true;
+  lessonVocabSection.hidden = true;
+  lessonRecommendationsSection.hidden = true;
+  lessonAnalysisStatus.textContent = "Uploading audio…";
+
+  try {
+    const { recordingId } = await fetch("/api/recordings", {
+      method: "POST",
+      headers: { "Content-Type": blob.type || "audio/webm" },
+      body: blob,
+      credentials: "same-origin",
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed.");
+      return data;
+    });
+
+    lessonAnalysisStatus.textContent = "Upload complete. Transcribing audio with Whisper…";
+
+    const analyzed = await pollRecordingStatus(recordingId);
+
+    if (analyzed?.analysis) {
+      lessonAnalysisStatus.textContent = "✓ Lesson analyzed by your AI Teacher.";
+      renderLessonAnalysis(analyzed.analysis);
+    } else {
+      lessonAnalysisStatus.textContent = "✓ Lesson processed. Analysis will appear shortly.";
+    }
+
+    state.classRecordingBlob = null;
+  } catch (error) {
+    lessonAnalysisStatus.textContent = `Error: ${error.message}`;
+    uploadRecordingButton.disabled = false;
+    uploadRecordingSection.hidden = false;
+  }
+});
 
 adminLevelSuggestionRows.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-admin-review-student]");

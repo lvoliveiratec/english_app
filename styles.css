@@ -767,6 +767,34 @@ input {
   color: var(--muted);
 }
 
+.lesson-analysis-panel {
+  margin-top: 1.25rem;
+  padding: 1.1rem;
+  background: #eef9f5;
+  border: 1px solid #bfe7d7;
+  border-radius: 10px;
+}
+
+.lesson-summary {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.97rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.lesson-analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 600px) {
+  .lesson-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .invite-banner {
   margin-top: 1.2rem;
   border: 1px solid #bfe7d7;

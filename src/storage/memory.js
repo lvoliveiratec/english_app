@@ -883,6 +883,68 @@ class MemoryStorage {
     if (!entry) return null;
     return { feedback: entry.feedback, level: entry.level, priorities: entry.priorities, createdAt: entry.createdAt };
   }
+
+  async createLessonRecording({ studentId, audioPath, audioMime, fileSizeBytes }) {
+    const recording = {
+      id: `rec_${Date.now()}`,
+      studentId,
+      teacherId: null,
+      audioPath,
+      audioMime,
+      fileSizeBytes,
+      durationSeconds: null,
+      transcript: null,
+      processingStatus: "uploaded",
+      createdAt: nowIso(),
+    };
+    if (!this.state.lessonRecordings) this.state.lessonRecordings = [];
+    this.state.lessonRecordings.push(recording);
+    return recording;
+  }
+
+  async getLessonRecording(recordingId) {
+    return (this.state.lessonRecordings || []).find((r) => r.id === recordingId) || null;
+  }
+
+  async updateLessonRecording(recordingId, { processingStatus, transcript } = {}) {
+    const rec = (this.state.lessonRecordings || []).find((r) => r.id === recordingId);
+    if (!rec) return;
+    if (processingStatus !== undefined) rec.processingStatus = processingStatus;
+    if (transcript !== undefined) rec.transcript = transcript;
+  }
+
+  async saveRecordingAnalysis(recordingId, studentId, analysis) {
+    const rec = (this.state.lessonRecordings || []).find((r) => r.id === recordingId);
+    if (rec) rec.analysis = analysis;
+    if (!this.state.aiFeedback) this.state.aiFeedback = [];
+    this.state.aiFeedback.push({
+      id: `feedback_${Date.now()}`,
+      studentId,
+      sourceType: "lesson_recording",
+      sourceId: recordingId,
+      summary: analysis.summary || "",
+      recommendations: analysis.practiceRecommendations || [],
+      createdAt: nowIso(),
+    });
+  }
+
+  async getTeacherForStudent(studentId) {
+    const assignment = this.state.teacherStudentAssignments.find(
+      (a) => a.studentId === studentId && a.status === "active",
+    );
+    if (!assignment) return null;
+    const profile = this.state.teacherProfiles.find((p) => p.userId === assignment.teacherId);
+    return profile ? { id: assignment.teacherId, fullName: profile.fullName, specialty: profile.specialty } : null;
+  }
+
+  async getLatestLessonAnalysis(studentId) {
+    if (!this.state.aiFeedback) return null;
+    return (
+      [...this.state.aiFeedback]
+        .reverse()
+        .find((f) => f.studentId === studentId && f.sourceType === "lesson_recording") || null
+    );
+  }
 }
 
 module.exports = {

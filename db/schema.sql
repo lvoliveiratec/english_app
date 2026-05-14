@@ -194,6 +194,22 @@ create table if not exists ai_feedback (
   created_at timestamptz not null default now()
 );
 
+create table if not exists lesson_recordings (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references users(id) on delete cascade,
+  teacher_id uuid references users(id) on delete set null,
+  audio_path text,
+  audio_mime text,
+  duration_seconds integer,
+  file_size_bytes integer,
+  transcript text,
+  processing_status text not null default 'uploaded',
+  -- uploaded | transcribing | transcribed | analyzing | analyzed | failed
+  analysis_json text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references users(id) on delete cascade,
