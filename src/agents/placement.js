@@ -46,11 +46,20 @@ ${cefrGuide}
 ${assessmentKb}
 
 Rules for evaluation:
-- Accept any answer that conveys the correct meaning
-- Forgive minor spelling errors
-- Look for patterns across all answers, not just individual mistakes
-- If grammar is strong but vocabulary is weak, note both
-- Return valid JSON only, no markdown fences`;
+- Accept answers that convey the correct meaning, even with minor spelling errors
+- Count clearly wrong, irrelevant, or non-English answers as incorrect
+- "I don't know", blank answers, or answers in the student's native language count as wrong
+- Estimate a score: count how many of the 8 questions the student answered correctly
+- If the student scores fewer than 4 out of 8 correct, place them at least one full level BELOW the self-reported level
+- If the student scores 2 or fewer correct, place them two levels below self-reported
+- Do not give benefit of the doubt for wrong answers — only for synonyms or minor spelling variations
+- If grammar and vocabulary answers are mostly wrong but reading shows comprehension, note the discrepancy
+- Trust the test results over the self-reported level
+
+You MUST respond with valid JSON only — no markdown, no extra text, nothing before or after the JSON object:
+{"feedback":"2-3 encouraging sentences describing the result","level":"Beginner","priorities":["priority 1","priority 2","priority 3"]}
+
+The level field must be exactly one of: Beginner, Elementary, Intermediate, Upper Intermediate, Advanced`;
 
 const levelMetrics = {
   Beginner: { fluency: 12, listening: 18, pronunciation: 10 },
@@ -77,14 +86,29 @@ async function generatePlacementQuestions({ profile, selfReportedLevel }) {
 - Self-reported level: ${selfReportedLevel}
 - Learning goal: ${profile.goal || "general English"}
 
-Generate exactly 7 questions in this order:
-1. grammar gap_fill — test a structure from the self-reported level
-2. grammar gap_fill — test a structure one level below
-3. vocabulary gap_fill — use a word from the level's topic list
-4. vocabulary multiple_choice — 3 options, one clearly correct
-5. reading comprehension — include a 60–80 word passage, ask about a specific detail
+Generate exactly 8 questions in this order:
+1. grammar gap_fill — test a structure AT the self-reported level (use the exact level's structures from the KB)
+2. grammar gap_fill — test a structure ONE level below (to confirm foundation)
+3. vocabulary gap_fill — appropriate for the self-reported level
+4. vocabulary multiple_choice — 3 options, one clearly correct, difficulty matching self-reported level
+5. reading comprehension — include a 60–80 word passage on an abstract or professional topic (for B2+) or everyday topic (for A1-B1), ask a specific detail question
 6. reading comprehension — same passage as #5, ask an inference question
-7. listening gap_fill — short natural dialogue, mark exactly 2 blanks as ___ in the passage
+7. listening gap_fill — short natural spoken dialogue with exactly 2 blanks marked as ___ in the passage text; each speaker turn must be on its own line separated by \n (e.g. "Tourist: Hello!\nAgent: Hi there, we ___ you.")
+8. speaking — provide 1-2 sentences for the student to read aloud; the passage field must contain ONLY the text to read (no instructions); the prompt must be "Read the text above aloud."
+
+IMPORTANT — difficulty rules:
+- For Advanced (C1): use inversion, cleft sentences, nominalization, complex conditionals, register
+- For Upper Intermediate (B2): use mixed conditionals, wish structures, passive, relative clauses
+- For Intermediate (B1): use past perfect, reported speech, modals, first/second conditional
+- For Elementary (A2): use simple past, present perfect, comparatives, must/should
+- For Beginner (A1): use present simple, to be, basic questions, can
+
+For question 8 (speaking), examples by level:
+- Beginner: "My name is Maria. I work at a hospital."
+- Elementary: "Last weekend, I went to the market and bought some fresh vegetables."
+- Intermediate: "Although the weather was unpredictable, we decided to go ahead with our plans."
+- Upper Intermediate: "It is widely believed that regular exercise improves both physical and mental health."
+- Advanced: "Not only did the discovery challenge existing theories, but it also opened new avenues for research."
 
 Return this JSON structure:
 {
@@ -141,8 +165,13 @@ async function runPlacementAgent({ profile, level, goal, questions, answers, wri
     const qa = questions
       .map((q) => {
         const studentAnswer = answers[q.id] || "(no answer)";
-        const passageNote = q.passage ? `\n[Passage shown: yes]` : "";
-        return `[${q.skill.toUpperCase()}] ${q.prompt}${passageNote}\nStudent answer: ${studentAnswer}`;
+        let context = "";
+        if (q.skill === "speaking" && q.passage) {
+          context = `\n[Target text to read: "${q.passage}"]`;
+        } else if (q.passage) {
+          context = `\n[Passage shown: yes]`;
+        }
+        return `[${q.skill.toUpperCase()}] ${q.prompt}${context}\nStudent answer: ${studentAnswer}`;
       })
       .join("\n\n");
 
@@ -154,10 +183,7 @@ Student profile:
 - Goal: ${goal}
 
 Test answers:
-${qa}
-
-Return JSON:
-{"feedback":"2–3 encouraging sentences about their result","level":"Beginner|Elementary|Intermediate|Upper Intermediate|Advanced","priorities":["specific priority 1","specific priority 2","specific priority 3"]}`;
+${qa}`;
   } else {
     userMessage = [
       "Student profile:",
@@ -165,13 +191,12 @@ Return JSON:
       `- Self-reported level: ${level}`,
       `- Main goal: ${goal}`,
       writing ? `\nWriting sample:\n"${writing}"` : "\nNo writing sample provided.",
-      '\nReturn JSON: {"feedback":"...","level":"...","priorities":["..."]}',
     ].join("\n");
   }
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
+    max_tokens: 1024,
     system: [{ type: "text", text: evaluationSystemPrompt, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: userMessage }],
   });
@@ -181,6 +206,7 @@ Return JSON:
   try {
     result = JSON.parse(raw);
   } catch {
+    console.error("[placement] evaluation raw response:", response.content[0].text);
     throw new Error("Placement agent returned an invalid response.");
   }
 

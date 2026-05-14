@@ -1,11 +1,13 @@
 :root {
   --ink: #17202a;
+  --text: #17202a;
   --muted: #5c6875;
   --line: #dbe2ea;
   --paper: #f8fafc;
   --white: #ffffff;
   --blue: #2563eb;
   --green: #16855f;
+  --accent: #16855f;
   --coral: #e25645;
   --gold: #c88719;
   --violet: #6d5dfc;
@@ -661,6 +663,56 @@ input {
   box-sizing: border-box;
 }
 
+.record-speak-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.2rem;
+  background: #fff;
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin-top: 0.25rem;
+}
+
+.record-speak-button:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.record-speak-button.recording {
+  background: #e53e3e;
+  border-color: #e53e3e;
+  color: #fff;
+  animation: pulse-record 1s infinite;
+}
+
+@keyframes pulse-record {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.speaking-transcript {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  background: #f7fafc;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  min-height: 2.5rem;
+  font-style: italic;
+}
+
+.speaking-transcript:not(:empty) {
+  color: var(--text);
+  font-style: normal;
+}
+
 .radio-option {
   display: flex;
   align-items: center;
@@ -668,6 +720,51 @@ input {
   padding: 0.45rem 0;
   font-size: 0.95rem;
   cursor: pointer;
+}
+
+.listening-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.listening-blank-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.listening-blank-label + .listening-blank-label {
+  margin-top: 0.6rem;
+}
+
+.listen-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.listen-button:hover {
+  opacity: 0.85;
+}
+
+.listen-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 .invite-banner {

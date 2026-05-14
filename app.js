@@ -550,9 +550,27 @@ function buildTeacherInviteUrl(code) {
 
 async function fetchAndApplyPlacement() {
   try {
-    const result = await apiRequest("/api/placement");
-    if (result) {
-      state.placement = { ...result, goal: state.studentProfile?.goal || "" };
+    const [placement, session] = await Promise.all([
+      apiRequest("/api/placement"),
+      apiRequest("/api/auth/me"),
+    ]);
+
+    // Refresh profile so level changes approved by teacher/admin take effect immediately
+    if (session?.profile) {
+      const updatedProfile = {
+        ...state.studentProfile,
+        ...session.profile,
+        email: session.user?.email || state.userEmail,
+        phone: session.user?.phone || state.userPhone,
+        address: session.address || state.address,
+      };
+      state.studentProfile = updatedProfile;
+      localStorage.setItem("fluentpath:studentProfile", JSON.stringify(updatedProfile));
+      refreshSessionCopy();
+    }
+
+    if (placement) {
+      state.placement = { ...placement, goal: state.studentProfile?.goal || "" };
       localStorage.setItem("fluentpath:placement", JSON.stringify(state.placement));
       renderProgressMetrics();
       updatePlacementUI();
@@ -1703,14 +1721,152 @@ courseGrid.addEventListener("click", (event) => {
   navigateTo("course");
 });
 
+function formatPassageHtml(text) {
+  const safe = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  let html = safe
+    .replace(/\*\*([^*\n]+):\*\*/g, "<strong>$1:</strong>")
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>");
+
+  // Add line break before each new speaker mid-dialogue
+  // Matches: sentence-ending punctuation + space + CapitalWord(s) + colon (plain or bold)
+  html = html
+    .replace(/([.!?])\s+(<strong>[A-Z][^<:]+:<\/strong>)/g, "$1<br>$2")
+    .replace(/([.!?])\s+([A-Z][a-zA-Z ]{1,20}:(?=\s))/g, "$1<br>$2");
+
+  return html;
+}
+
+function cleanForSpeech(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/_+\s*\(1\)/g, "blank one")
+    .replace(/_+\s*\(2\)/g, "blank two")
+    .replace(/_+\s*\(3\)/g, "blank three")
+    .replace(/_+/g, "blank")
+    .replace(/\n+/g, ". ")
+    .trim();
+}
+
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(cleanForSpeech(text));
+  utterance.lang = "en-US";
+  utterance.rate = 0.85;
+  utterance.pitch = 1.05;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(
+    (v) => v.lang === "en-US" && (v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Karen")),
+  );
+  if (preferred) utterance.voice = preferred;
+  window.speechSynthesis.speak(utterance);
+}
+
+let activeRecognition = null;
+
+function startSpeechRecognition(questionId) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.querySelector(`[data-speaking-id="${questionId}"]`);
+  const display = document.getElementById(`transcript-${questionId}`);
+  const input = document.querySelector(`input[name="${questionId}"]`);
+
+  if (!SpeechRecognition) {
+    display.textContent = "Speech recognition is not supported in this browser. Please use Chrome or Edge.";
+    return;
+  }
+
+  if (activeRecognition) {
+    activeRecognition.stop();
+    activeRecognition = null;
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  activeRecognition = recognition;
+
+  btn.textContent = "⏹ Stop";
+  btn.classList.add("recording");
+  display.textContent = "Listening…";
+
+  recognition.onresult = (event) => {
+    const transcript = Array.from(event.results)
+      .map((r) => r[0].transcript)
+      .join(" ");
+    display.textContent = `"${transcript}"`;
+    input.value = transcript;
+  };
+
+  recognition.onerror = () => {
+    display.textContent = "Could not capture speech. Please try again.";
+    btn.textContent = "🎤 Try again";
+    btn.classList.remove("recording");
+    activeRecognition = null;
+  };
+
+  recognition.onend = () => {
+    btn.textContent = input.value ? "🎤 Record again" : "🎤 Start recording";
+    btn.classList.remove("recording");
+    activeRecognition = null;
+  };
+
+  recognition.start();
+}
+
 function renderPlacementQuestion(q) {
-  const skillLabel = { grammar: "Grammar", vocabulary: "Vocabulary", reading: "Reading", listening: "Listening" };
-  const passage = q.passage
-    ? `<div class="assessment-passage">${escapeHtml(q.passage)}</div>`
-    : "";
+  const skillLabel = { grammar: "Grammar", vocabulary: "Vocabulary", reading: "Reading", listening: "Listening", speaking: "Speaking" };
+
+  let passageHtml = "";
+  if (q.passage) {
+    if (q.skill === "listening") {
+      const passageId = `passage-${escapeHtml(q.id)}`;
+      passageHtml = `
+        <div class="listening-controls">
+          <button type="button" class="listen-button" data-passage-id="${passageId}">
+            🔊 Listen
+          </button>
+          <span class="listen-hint">Tap to hear the dialogue aloud</span>
+        </div>
+        <div class="assessment-passage" id="${passageId}" data-text="${escapeHtml(q.passage)}">${formatPassageHtml(q.passage)}</div>`;
+    } else {
+      passageHtml = `<div class="assessment-passage">${formatPassageHtml(q.passage)}</div>`;
+    }
+  }
 
   let input;
-  if (q.type === "multiple_choice" && Array.isArray(q.options)) {
+  if (q.skill === "listening" && q.type === "gap_fill" && q.passage) {
+    const blankCount = (q.passage.match(/___/g) || []).length;
+    if (blankCount > 1) {
+      input = Array.from({ length: blankCount }, (_, i) =>
+        `<label class="listening-blank-label">
+          Blank ${i + 1}
+          <input class="assessment-text-input" type="text"
+            name="${escapeHtml(q.id)}_b${i + 1}"
+            placeholder="Fill in blank ${i + 1}"
+            autocomplete="off">
+        </label>`,
+      ).join("");
+    } else {
+      input = `<input class="assessment-text-input" type="text" name="${escapeHtml(q.id)}" placeholder="Fill in the blank" autocomplete="off">`;
+    }
+  } else if (q.skill === "speaking") {
+    input = `
+      <button type="button" class="record-speak-button" data-speaking-id="${escapeHtml(q.id)}">
+        🎤 Start recording
+      </button>
+      <p class="speaking-transcript" id="transcript-${escapeHtml(q.id)}">
+        Press the button, then read the text above clearly.
+      </p>
+      <input type="hidden" name="${escapeHtml(q.id)}" value="">`;
+  } else if (q.type === "multiple_choice" && Array.isArray(q.options)) {
     input = q.options
       .map(
         (opt) =>
@@ -1723,7 +1879,7 @@ function renderPlacementQuestion(q) {
 
   return `<div class="assessment-question">
     <span class="question-skill">${escapeHtml(skillLabel[q.skill] || q.skill)}</span>
-    ${passage}
+    ${passageHtml}
     <p class="question-prompt">${escapeHtml(q.prompt)}</p>
     ${input}
   </div>`;
@@ -1759,14 +1915,40 @@ async function startPlacementTest() {
 startPlacementButton.addEventListener("click", startPlacementTest);
 retakePlacementButton.addEventListener("click", startPlacementTest);
 
+placementQuestions.addEventListener("click", (event) => {
+  const listenBtn = event.target.closest(".listen-button");
+  if (listenBtn) {
+    const passage = document.getElementById(listenBtn.dataset.passageId);
+    if (passage) speakText(passage.dataset.text);
+    return;
+  }
+
+  const recordBtn = event.target.closest(".record-speak-button");
+  if (recordBtn) {
+    startSpeechRecognition(recordBtn.dataset.speakingId);
+  }
+});
+
 placementTestForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   placementTestError.hidden = true;
 
   const formData = new FormData(placementTestForm);
-  const answers = {};
+  const rawAnswers = {};
   for (const [key, value] of formData.entries()) {
-    answers[key] = value.toString().trim();
+    const blankMatch = key.match(/^(.+)_b(\d+)$/);
+    if (blankMatch) {
+      const baseId = blankMatch[1];
+      const idx = Number(blankMatch[2]) - 1;
+      if (!rawAnswers[baseId]) rawAnswers[baseId] = [];
+      rawAnswers[baseId][idx] = value.toString().trim();
+    } else {
+      rawAnswers[key] = value.toString().trim();
+    }
+  }
+  const answers = {};
+  for (const [key, val] of Object.entries(rawAnswers)) {
+    answers[key] = Array.isArray(val) ? val.filter(Boolean).join(", ") : val;
   }
 
   const submitButton = placementTestForm.querySelector("[type='submit']");

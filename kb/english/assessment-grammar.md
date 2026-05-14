@@ -107,6 +107,28 @@ Use it to generate grammar questions and evaluate student responses accurately.
 
 ---
 
+## C1 — Advanced
+
+### Target structures (builds on B2)
+- Inversion for emphasis (Never have I..., Not only did she..., Should you need...)
+- Cleft sentences (It was the price that surprised me. What I need is more time.)
+- Nominalization (The announcement of the decision caused concern.)
+- Advanced subjunctive and formal conditionals (Were I to resign... / Had they arrived earlier...)
+- Complex noun phrases and post-modification (The proposal submitted by the committee...)
+- Hedging and epistemic modals (It would appear that... / This may well be the case...)
+- Discourse-level connectors (Nevertheless, by the same token, in so far as...)
+- Reporting verbs with complex patterns (She insisted on being told. He denied having taken it.)
+- Advanced passive constructions (It is widely believed... / The results are said to indicate...)
+
+### Sample gap-fill items (C1)
+- "___ I known about the problem earlier, I could have prevented it." → Had
+- "It was ___ the project failed that the team lost confidence." → only when / only after
+- "___ she refuse to cooperate, we will have no choice but to escalate." → Should
+- "The decision ___ by the board came as a shock to employees." → reached / taken / made
+- "Not only ___ she miss the meeting, but she also failed to send a report." → did
+
+---
+
 ## Scoring Guide
 
 | Score (correct out of 2 per level) | Assessment |
