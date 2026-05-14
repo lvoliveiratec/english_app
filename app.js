@@ -1995,7 +1995,35 @@ function pickBestVoice(voices) {
   );
 }
 
-async function speakTextElevenLabs(text) {
+// Web Audio API context — must be created/resumed synchronously inside a click handler
+let _audioCtx = null;
+
+function getAudioContext() {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _audioCtx;
+}
+
+// Call this synchronously inside the click handler BEFORE any awaits
+function unlockAudioContext() {
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+async function playAudioBuffer(ctx, arrayBuffer) {
+  const decoded = await ctx.decodeAudioData(arrayBuffer);
+  return new Promise((resolve) => {
+    const source = ctx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(ctx.destination);
+    source.onended = resolve;
+    source.start(0);
+  });
+}
+
+async function speakTextElevenLabs(text, ctx) {
   const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
   const rawLines = text.split(/\n+/).filter(Boolean);
   const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
@@ -2024,24 +2052,19 @@ async function speakTextElevenLabs(text) {
         body: JSON.stringify({ text: content, voiceIndex }),
       });
       if (!res.ok) throw new Error("TTS failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      await new Promise((resolve) => {
-        const audio = new Audio(url);
-        audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-        audio.onerror = resolve;
-        audio.play().catch(resolve);
-      });
+      const arrayBuffer = await res.arrayBuffer();
+      await playAudioBuffer(ctx, arrayBuffer);
     } catch {
-      // Fall through to next line if one fails
+      // Continue to next line on error
     }
   }
 }
 
 function speakText(text) {
-  // Use ElevenLabs if API key is configured (checked via env at load time)
   if (window.__elevenLabsEnabled) {
-    speakTextElevenLabs(text).catch(() => speakTextBrowser(text));
+    // iOS fix: unlock Web Audio context synchronously before any async work
+    const ctx = unlockAudioContext();
+    speakTextElevenLabs(text, ctx).catch(() => speakTextBrowser(text));
     return;
   }
   speakTextBrowser(text);
