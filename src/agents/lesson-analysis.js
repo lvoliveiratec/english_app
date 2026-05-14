@@ -1,15 +1,17 @@
 const Anthropic = require("@anthropic-ai/sdk");
-const OpenAI = require("openai");
+const { AssemblyAI } = require("assemblyai");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const anthropic = new Anthropic();
 
-function getOpenAI() {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set. Add it to your .env file to enable lesson transcription.");
+function getAssemblyAI() {
+  if (!process.env.ASSEMBLYAI_API_KEY) {
+    throw new Error(
+      "ASSEMBLYAI_API_KEY is not set. Add it to your .env file to enable lesson transcription.",
+    );
   }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return new AssemblyAI({ apiKey: process.env.ASSEMBLYAI_API_KEY });
 }
 
 const correctionPolicy = fs.readFileSync(
@@ -38,6 +40,7 @@ When analyzing a lesson:
 - Observe fluency signals (hesitation, self-correction, sentence complexity)
 - Compare to the student's current level and goal
 - Generate 3 specific practice recommendations for the student's next study session
+- If the transcript includes speaker labels (Speaker A, Speaker B), try to identify which is the teacher and which is the student based on who is correcting and who is being corrected
 
 You MUST respond with valid JSON only, no markdown:
 {
@@ -52,20 +55,27 @@ You MUST respond with valid JSON only, no markdown:
   "progressNote": "observation about fluency or confidence relative to the student's level"
 }`;
 
-async function transcribeAudio(filePath, mimeType) {
-  const openai = getOpenAI();
-  const audioStream = fs.createReadStream(filePath);
-  const ext = path.extname(filePath).slice(1) || "webm";
+async function transcribeAudio(filePath) {
+  const client = getAssemblyAI();
 
-  const transcription = await openai.audio.transcriptions.create({
-    file: audioStream,
-    model: "whisper-1",
-    language: "en",
-    response_format: "text",
-    filename: `recording.${ext}`,
+  const transcript = await client.transcripts.transcribe({
+    audio: filePath,
+    language_code: "en",
+    speaker_labels: true,
   });
 
-  return transcription;
+  if (transcript.status === "error") {
+    throw new Error(`Transcription failed: ${transcript.error}`);
+  }
+
+  // Format with speaker labels when available — helps Claude identify teacher vs student
+  if (transcript.utterances && transcript.utterances.length > 0) {
+    return transcript.utterances
+      .map((u) => `Speaker ${u.speaker}: ${u.text}`)
+      .join("\n");
+  }
+
+  return transcript.text || "";
 }
 
 async function analyzeLessonTranscript({ transcript, studentProfile, teacherProfile }) {

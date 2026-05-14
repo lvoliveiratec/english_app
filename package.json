@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
+    "assemblyai": "^4.33.2",
     "openai": "^6.37.0",
     "pg": "^8.20.0"
   }
