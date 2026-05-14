@@ -60,6 +60,8 @@ const classPreview = document.querySelector("#classPreview");
 const classFeedback = document.querySelector("#classFeedback");
 const uploadRecordingSection = document.querySelector("#uploadRecordingSection");
 const uploadRecordingButton = document.querySelector("#uploadRecordingButton");
+const audioFileInput = document.querySelector("#audioFileInput");
+const uploadFileLabel = document.querySelector("#uploadFileLabel");
 const lessonAnalysisPanel = document.querySelector("#lessonAnalysisPanel");
 const lessonAnalysisStatus = document.querySelector("#lessonAnalysisStatus");
 const lessonAnalysisResult = document.querySelector("#lessonAnalysisResult");
@@ -2112,12 +2114,7 @@ function renderLessonAnalysis(analysis) {
   lessonAnalysisResult.hidden = false;
 }
 
-uploadRecordingButton.addEventListener("click", async () => {
-  const blob = state.classRecordingBlob;
-  if (!blob) return;
-
-  uploadRecordingButton.disabled = true;
-  uploadRecordingSection.hidden = true;
+async function uploadAndAnalyzeBlob(blob) {
   lessonAnalysisPanel.hidden = false;
   lessonAnalysisResult.hidden = true;
   lessonMistakesSection.hidden = true;
@@ -2125,34 +2122,68 @@ uploadRecordingButton.addEventListener("click", async () => {
   lessonRecommendationsSection.hidden = true;
   lessonAnalysisStatus.textContent = "Uploading audio…";
 
+  const { recordingId } = await fetch("/api/recordings", {
+    method: "POST",
+    headers: { "Content-Type": blob.type || "audio/webm" },
+    body: blob,
+    credentials: "same-origin",
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed.");
+    return data;
+  });
+
+  lessonAnalysisStatus.textContent = "Upload complete. Transcribing with Whisper…";
+  const analyzed = await pollRecordingStatus(recordingId);
+
+  if (analyzed?.analysis) {
+    lessonAnalysisStatus.textContent = "✓ Lesson analyzed by your AI Teacher.";
+    renderLessonAnalysis(analyzed.analysis);
+  } else {
+    lessonAnalysisStatus.textContent = "✓ Lesson processed. Analysis will appear shortly.";
+  }
+}
+
+uploadRecordingButton.addEventListener("click", async () => {
+  const blob = state.classRecordingBlob;
+  if (!blob) return;
+
+  uploadRecordingButton.disabled = true;
+  uploadRecordingSection.hidden = true;
+
   try {
-    const { recordingId } = await fetch("/api/recordings", {
-      method: "POST",
-      headers: { "Content-Type": blob.type || "audio/webm" },
-      body: blob,
-      credentials: "same-origin",
-    }).then(async (res) => {
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed.");
-      return data;
-    });
-
-    lessonAnalysisStatus.textContent = "Upload complete. Transcribing audio with Whisper…";
-
-    const analyzed = await pollRecordingStatus(recordingId);
-
-    if (analyzed?.analysis) {
-      lessonAnalysisStatus.textContent = "✓ Lesson analyzed by your AI Teacher.";
-      renderLessonAnalysis(analyzed.analysis);
-    } else {
-      lessonAnalysisStatus.textContent = "✓ Lesson processed. Analysis will appear shortly.";
-    }
-
+    await uploadAndAnalyzeBlob(blob);
     state.classRecordingBlob = null;
   } catch (error) {
     lessonAnalysisStatus.textContent = `Error: ${error.message}`;
     uploadRecordingButton.disabled = false;
     uploadRecordingSection.hidden = false;
+  }
+});
+
+audioFileInput.addEventListener("change", async () => {
+  const file = audioFileInput.files?.[0];
+  if (!file) return;
+
+  if (file.size > 30 * 1024 * 1024) {
+    classFeedback.textContent = "File is too large. Maximum size is 30 MB.";
+    audioFileInput.value = "";
+    return;
+  }
+
+  uploadFileLabel.style.pointerEvents = "none";
+  uploadFileLabel.style.opacity = "0.6";
+  classFeedback.textContent = `File selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB). Uploading…`;
+
+  try {
+    await uploadAndAnalyzeBlob(file);
+    classFeedback.textContent = "Analysis complete. See results below.";
+  } catch (error) {
+    classFeedback.textContent = `Error: ${error.message}`;
+  } finally {
+    uploadFileLabel.style.pointerEvents = "";
+    uploadFileLabel.style.opacity = "";
+    audioFileInput.value = "";
   }
 });
 

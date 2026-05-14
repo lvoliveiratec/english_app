@@ -767,6 +767,25 @@ input {
   color: var(--muted);
 }
 
+.recording-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.upload-file-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.upload-file-label::before {
+  content: "📎";
+}
+
 .lesson-analysis-panel {
   margin-top: 1.25rem;
   padding: 1.1rem;
