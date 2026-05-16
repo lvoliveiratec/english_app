@@ -112,8 +112,28 @@ const loadMoreAssignmentsBtn = document.querySelector("#loadMoreAssignmentsBtn")
 const adminAssignmentPageInfo = document.querySelector("#adminAssignmentPageInfo");
 const adminAssignmentPagination = document.querySelector("#adminAssignmentPagination");
 
+const loadMoreAdminStudentBtn = document.querySelector("#loadMoreAdminStudentBtn");
+const adminStudentPageInfo = document.querySelector("#adminStudentPageInfo");
+const adminStudentPagination = document.querySelector("#adminStudentPagination");
+
+const loadMoreAdminTeacherBtn = document.querySelector("#loadMoreAdminTeacherBtn");
+const adminTeacherPageInfo = document.querySelector("#adminTeacherPageInfo");
+const adminTeacherPagination = document.querySelector("#adminTeacherPagination");
+
+const loadMoreAdminPlanBtn = document.querySelector("#loadMoreAdminPlanBtn");
+const adminPlanPageInfo = document.querySelector("#adminPlanPageInfo");
+const adminPlanPagination = document.querySelector("#adminPlanPagination");
+
+const loadMoreAdminCourseBtn = document.querySelector("#loadMoreAdminCourseBtn");
+const adminCoursePageInfo = document.querySelector("#adminCoursePageInfo");
+const adminCoursePagination = document.querySelector("#adminCoursePagination");
+
 const ADMIN_PAGE_SIZE = 10;
 let adminAssignmentOffset = ADMIN_PAGE_SIZE;
+let adminStudentOffset = ADMIN_PAGE_SIZE;
+let adminTeacherOffset = ADMIN_PAGE_SIZE;
+let adminPlanOffset = ADMIN_PAGE_SIZE;
+let adminCourseOffset = ADMIN_PAGE_SIZE;
 const adminPendingPayments = document.querySelector("#adminPendingPayments");
 const adminActiveStudents = document.querySelector("#adminActiveStudents");
 const adminActivityList = document.querySelector("#adminActivityList");
@@ -416,11 +436,13 @@ function setRoute(routeName) {
   }
 
   if (safeRoute === "admin-students") {
+    adminStudentOffset = ADMIN_PAGE_SIZE;
     renderAdminSummary();
     renderAdminResources();
   }
 
   if (safeRoute === "admin-teachers") {
+    adminTeacherOffset = ADMIN_PAGE_SIZE;
     renderAdminResources();
   }
 
@@ -430,10 +452,12 @@ function setRoute(routeName) {
   }
 
   if (safeRoute === "admin-plans") {
+    adminPlanOffset = ADMIN_PAGE_SIZE;
     renderAdminResources();
   }
 
   if (safeRoute === "admin-courses") {
+    adminCourseOffset = ADMIN_PAGE_SIZE;
     renderAdminResources();
   }
 
@@ -1489,6 +1513,14 @@ function populateStudentTeacherFilter() {
   if (current) adminStudentTeacherFilter.value = current;
 }
 
+function applyPagination(filtered, offset, pagination, pageInfo, loadMoreBtn, total, noun) {
+  const visible = filtered.slice(0, offset);
+  if (pageInfo) pageInfo.textContent = `Showing ${visible.length} of ${filtered.length}${filtered.length < total ? ` (filtered from ${total})` : ""}`;
+  if (pagination) pagination.hidden = filtered.length <= ADMIN_PAGE_SIZE && offset >= filtered.length;
+  if (loadMoreBtn) loadMoreBtn.hidden = offset >= filtered.length;
+  return visible;
+}
+
 function renderFilteredStudents() {
   const query = (adminStudentSearch?.value || "").toLowerCase().trim();
   const level = adminStudentLevelFilter?.value || "";
@@ -1505,18 +1537,12 @@ function renderFilteredStudents() {
   });
 
   if (adminStudentFilterInfo) {
-    const total = adminState.students.length;
-    adminStudentFilterInfo.textContent = filtered.length < total
-      ? `Showing ${filtered.length} of ${total} students`
-      : "";
+    adminStudentFilterInfo.textContent = filtered.length < adminState.students.length
+      ? `Filtered: ${filtered.length} of ${adminState.students.length} students` : "";
   }
 
-  adminStudentRows.innerHTML = renderRows(
-    filtered,
-    "students",
-    (item) => [item.fullName, item.email, item.level, item.goal, item.teacherName || "Unassigned"],
-    6,
-  );
+  const visible = applyPagination(filtered, adminStudentOffset, adminStudentPagination, adminStudentPageInfo, loadMoreAdminStudentBtn, adminState.students.length, "students");
+  adminStudentRows.innerHTML = renderRows(visible, "students", (item) => [item.fullName, item.email, item.level, item.goal, item.teacherName || "Unassigned"], 6);
 }
 
 // ── Teachers filter ────────────────────────────────────────────────────
@@ -1548,9 +1574,10 @@ function renderFilteredTeachers() {
   });
   if (adminTeacherFilterInfo) {
     adminTeacherFilterInfo.textContent = filtered.length < adminState.teachers.length
-      ? `Showing ${filtered.length} of ${adminState.teachers.length} teachers` : "";
+      ? `Filtered: ${filtered.length} of ${adminState.teachers.length} teachers` : "";
   }
-  adminTeacherRows.innerHTML = renderRows(filtered, "teachers", (t) => [t.fullName, t.email, t.specialty || "-", t.status], 5);
+  const visible = applyPagination(filtered, adminTeacherOffset, adminTeacherPagination, adminTeacherPageInfo, loadMoreAdminTeacherBtn, adminState.teachers.length, "teachers");
+  adminTeacherRows.innerHTML = renderRows(visible, "teachers", (t) => [t.fullName, t.email, t.specialty || "-", t.status], 5);
 }
 
 // ── Assignments filter ─────────────────────────────────────────────────
@@ -1596,13 +1623,10 @@ function renderFilteredPlans() {
   });
   if (adminPlanFilterInfo) {
     adminPlanFilterInfo.textContent = filtered.length < adminState.plans.length
-      ? `Showing ${filtered.length} of ${adminState.plans.length} plans` : "";
+      ? `Filtered: ${filtered.length} of ${adminState.plans.length} plans` : "";
   }
-  adminPlanRows.innerHTML = renderRows(
-    filtered, "plans",
-    (p) => [p.name, `$${(p.priceCents / 100).toFixed(2)}`, p.billingCycle, p.status],
-    5,
-  );
+  const visible = applyPagination(filtered, adminPlanOffset, adminPlanPagination, adminPlanPageInfo, loadMoreAdminPlanBtn, adminState.plans.length, "plans");
+  adminPlanRows.innerHTML = renderRows(visible, "plans", (p) => [p.name, `$${(p.priceCents / 100).toFixed(2)}`, p.billingCycle, p.status], 5);
 }
 
 // ── Courses filter ─────────────────────────────────────────────────────
@@ -1621,13 +1645,10 @@ function renderFilteredCourses() {
   });
   if (adminCourseFilterInfo) {
     adminCourseFilterInfo.textContent = filtered.length < adminState.courses.length
-      ? `Showing ${filtered.length} of ${adminState.courses.length} courses` : "";
+      ? `Filtered: ${filtered.length} of ${adminState.courses.length} courses` : "";
   }
-  adminCourseRows.innerHTML = renderRows(
-    filtered, "courses",
-    (c) => [c.title, c.level || "-", c.duration || "-", c.status],
-    5,
-  );
+  const visible = applyPagination(filtered, adminCourseOffset, adminCoursePagination, adminCoursePageInfo, loadMoreAdminCourseBtn, adminState.courses.length, "courses");
+  adminCourseRows.innerHTML = renderRows(visible, "courses", (c) => [c.title, c.level || "-", c.duration || "-", c.status], 5);
 }
 
 function renderAdminAssignmentOptions() {
@@ -1990,65 +2011,69 @@ if (loadMoreAssignmentsBtn) {
   });
 }
 
-if (adminStudentSearch) {
-  adminStudentSearch.addEventListener("input", renderFilteredStudents);
-}
-if (adminStudentLevelFilter) {
-  adminStudentLevelFilter.addEventListener("change", renderFilteredStudents);
-}
-if (adminStudentGoalFilter) {
-  adminStudentGoalFilter.addEventListener("change", renderFilteredStudents);
-}
-if (adminStudentTeacherFilter) {
-  adminStudentTeacherFilter.addEventListener("change", renderFilteredStudents);
-}
+function resetAndRenderStudents() { adminStudentOffset = ADMIN_PAGE_SIZE; renderFilteredStudents(); }
+function resetAndRenderTeachers() { adminTeacherOffset = ADMIN_PAGE_SIZE; renderFilteredTeachers(); }
+function resetAndRenderPlans() { adminPlanOffset = ADMIN_PAGE_SIZE; renderFilteredPlans(); }
+function resetAndRenderCourses() { adminCourseOffset = ADMIN_PAGE_SIZE; renderFilteredCourses(); }
+
+if (adminStudentSearch) adminStudentSearch.addEventListener("input", resetAndRenderStudents);
+if (adminStudentLevelFilter) adminStudentLevelFilter.addEventListener("change", resetAndRenderStudents);
+if (adminStudentGoalFilter) adminStudentGoalFilter.addEventListener("change", resetAndRenderStudents);
+if (adminStudentTeacherFilter) adminStudentTeacherFilter.addEventListener("change", resetAndRenderStudents);
 if (clearStudentFiltersBtn) {
   clearStudentFiltersBtn.addEventListener("click", () => {
     if (adminStudentSearch) adminStudentSearch.value = "";
     if (adminStudentLevelFilter) adminStudentLevelFilter.value = "";
     if (adminStudentGoalFilter) adminStudentGoalFilter.value = "";
     if (adminStudentTeacherFilter) adminStudentTeacherFilter.value = "";
-    renderFilteredStudents();
+    resetAndRenderStudents();
   });
 }
 
 // Teacher filters
-if (adminTeacherSearch) adminTeacherSearch.addEventListener("input", renderFilteredTeachers);
-if (adminTeacherSpecialtyFilter) adminTeacherSpecialtyFilter.addEventListener("change", renderFilteredTeachers);
-if (adminTeacherStatusFilter) adminTeacherStatusFilter.addEventListener("change", renderFilteredTeachers);
+if (adminTeacherSearch) adminTeacherSearch.addEventListener("input", resetAndRenderTeachers);
+if (adminTeacherSpecialtyFilter) adminTeacherSpecialtyFilter.addEventListener("change", resetAndRenderTeachers);
+if (adminTeacherStatusFilter) adminTeacherStatusFilter.addEventListener("change", resetAndRenderTeachers);
 if (clearTeacherFiltersBtn) clearTeacherFiltersBtn.addEventListener("click", () => {
   if (adminTeacherSearch) adminTeacherSearch.value = "";
   if (adminTeacherSpecialtyFilter) adminTeacherSpecialtyFilter.value = "";
   if (adminTeacherStatusFilter) adminTeacherStatusFilter.value = "";
-  renderFilteredTeachers();
+  resetAndRenderTeachers();
 });
 
 // Assignment filters
-if (adminAssignmentSearch) adminAssignmentSearch.addEventListener("input", renderFilteredAssignments);
-if (adminAssignmentSourceFilter) adminAssignmentSourceFilter.addEventListener("change", renderFilteredAssignments);
+if (adminAssignmentSearch) adminAssignmentSearch.addEventListener("input", () => { adminAssignmentOffset = ADMIN_PAGE_SIZE; renderFilteredAssignments(); });
+if (adminAssignmentSourceFilter) adminAssignmentSourceFilter.addEventListener("change", () => { adminAssignmentOffset = ADMIN_PAGE_SIZE; renderFilteredAssignments(); });
 if (clearAssignmentFiltersBtn) clearAssignmentFiltersBtn.addEventListener("click", () => {
   if (adminAssignmentSearch) adminAssignmentSearch.value = "";
   if (adminAssignmentSourceFilter) adminAssignmentSourceFilter.value = "";
+  adminAssignmentOffset = ADMIN_PAGE_SIZE;
   renderFilteredAssignments();
 });
 
 // Plan filters
-if (adminPlanSearch) adminPlanSearch.addEventListener("input", renderFilteredPlans);
-if (adminPlanStatusFilter) adminPlanStatusFilter.addEventListener("change", renderFilteredPlans);
+if (adminPlanSearch) adminPlanSearch.addEventListener("input", resetAndRenderPlans);
+if (adminPlanStatusFilter) adminPlanStatusFilter.addEventListener("change", resetAndRenderPlans);
 if (clearPlanFiltersBtn) clearPlanFiltersBtn.addEventListener("click", () => {
   if (adminPlanSearch) adminPlanSearch.value = "";
   if (adminPlanStatusFilter) adminPlanStatusFilter.value = "";
-  renderFilteredPlans();
+  resetAndRenderPlans();
 });
 
 // Course filters
-if (adminCourseSearch) adminCourseSearch.addEventListener("input", renderFilteredCourses);
-if (adminCourseStatusFilter) adminCourseStatusFilter.addEventListener("change", renderFilteredCourses);
+if (adminCourseSearch) adminCourseSearch.addEventListener("input", resetAndRenderCourses);
+if (adminCourseStatusFilter) adminCourseStatusFilter.addEventListener("change", resetAndRenderCourses);
 if (clearCourseFiltersBtn) clearCourseFiltersBtn.addEventListener("click", () => {
   if (adminCourseSearch) adminCourseSearch.value = "";
   if (adminCourseStatusFilter) adminCourseStatusFilter.value = "";
-  renderFilteredCourses();
+  resetAndRenderCourses();
 });
+
+// Load more buttons
+if (loadMoreAdminStudentBtn) loadMoreAdminStudentBtn.addEventListener("click", () => { adminStudentOffset += ADMIN_PAGE_SIZE; renderFilteredStudents(); });
+if (loadMoreAdminTeacherBtn) loadMoreAdminTeacherBtn.addEventListener("click", () => { adminTeacherOffset += ADMIN_PAGE_SIZE; renderFilteredTeachers(); });
+if (loadMoreAdminPlanBtn) loadMoreAdminPlanBtn.addEventListener("click", () => { adminPlanOffset += ADMIN_PAGE_SIZE; renderFilteredPlans(); });
+if (loadMoreAdminCourseBtn) loadMoreAdminCourseBtn.addEventListener("click", () => { adminCourseOffset += ADMIN_PAGE_SIZE; renderFilteredCourses(); });
 
 if (studentNotificationsList) {
   studentNotificationsList.addEventListener("click", async (event) => {
