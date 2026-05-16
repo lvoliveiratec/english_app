@@ -1207,6 +1207,69 @@ blockquote {
   margin-bottom: 1rem;
 }
 
+.admin-nav-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-nav-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--white);
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+
+.admin-nav-card:hover {
+  background: #f0faf5;
+  border-color: var(--accent);
+}
+
+.admin-nav-card strong {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.admin-nav-card span:not(.admin-nav-arrow) {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.admin-nav-arrow {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
+  align-self: flex-end;
+}
+
+.admin-quick-links {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+  margin-top: 0.5rem;
+}
+
 .metric-card {
   border: 1px solid var(--line);
   border-radius: 8px;

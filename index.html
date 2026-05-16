@@ -941,30 +941,28 @@
           </div>
         </section>
 
-        <section class="page" id="admin" data-page>
+                <section class="page" id="admin" data-page>
           <div class="section-wrap">
             <div class="section-heading courses-heading">
               <div>
                 <p class="eyebrow">Administration</p>
-                <h1>School operations, students, teachers, progress, and payments.</h1>
-                <p class="admin-storage-note" id="adminPersistenceNote">
-                  Checking persistence mode...
-                </p>
+                <h1>School operations</h1>
+                <p class="admin-storage-note" id="adminPersistenceNote">Checking persistence mode...</p>
               </div>
-              <button class="secondary-action" type="button" id="refreshAdminButton">
-                Refresh
-              </button>
+              <button class="secondary-action" type="button" id="refreshAdminButton">Refresh</button>
             </div>
 
-            <div class="admin-metric-grid" id="adminMetricGrid" aria-label="Administrative metrics">
-              <article class="metric-card">
-                <span>Students</span>
+            <div class="admin-nav-metric-grid" aria-label="Administrative metrics">
+              <a href="#admin-students" class="admin-nav-card">
                 <strong id="adminStudentsCount">0</strong>
-              </article>
-              <article class="metric-card">
-                <span>Teachers</span>
+                <span>Students</span>
+                <span class="admin-nav-arrow">→</span>
+              </a>
+              <a href="#admin-teachers" class="admin-nav-card">
                 <strong id="adminTeachersCount">0</strong>
-              </article>
+                <span>Teachers</span>
+                <span class="admin-nav-arrow">→</span>
+              </a>
               <article class="metric-card">
                 <span>Admins</span>
                 <strong id="adminAdminsCount">0</strong>
@@ -975,59 +973,10 @@
               </article>
             </div>
 
-            <div class="admin-grid">
-              <section class="workspace-panel">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Student development</p>
-                    <h2>Progress and next actions</h2>
-                  </div>
-                  <span class="pill" id="adminStorageBadge">Backend</span>
-                </div>
-                <div class="admin-table-wrap">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Student</th>
-                        <th>Tests</th>
-                        <th>Level</th>
-                        <th>Goal</th>
-                        <th>Progress</th>
-                        <th>Difficulty</th>
-                        <th>Recommendation</th>
-                      </tr>
-                    </thead>
-                    <tbody id="adminProgressRows">
-                      <tr>
-                        <td colspan="6">Loading administrative summary...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section class="workspace-panel">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Operations</p>
-                    <h2>Payments and activity</h2>
-                  </div>
-                  <span class="pill warning">Prototype</span>
-                </div>
-                <div class="admin-list">
-                  <div>
-                    <span>Pending payments</span>
-                    <strong id="adminPendingPayments">0</strong>
-                  </div>
-                  <div>
-                    <span>Active students</span>
-                    <strong id="adminActiveStudents">0</strong>
-                  </div>
-                </div>
-                <ul class="activity-list" id="adminActivityList">
-                  <li>Loading activity...</li>
-                </ul>
-              </section>
+            <div class="admin-quick-links">
+              <a href="#admin-assignments" class="secondary-action">Teacher Assignments</a>
+              <a href="#admin-plans" class="secondary-action">Plans</a>
+              <a href="#admin-courses" class="secondary-action">Courses</a>
             </div>
 
             <section class="workspace-panel" id="adminLevelSuggestionsPanel" hidden>
@@ -1055,322 +1004,269 @@
               <p class="feedback-text" id="adminLevelSuggestionFeedback"></p>
             </section>
 
-            <section class="workspace-panel admin-assignment-panel">
+            <div class="admin-grid">
+              <section class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Operations</p>
+                    <h2>Payments and activity</h2>
+                  </div>
+                  <span class="pill warning">Prototype</span>
+                </div>
+                <div class="admin-list">
+                  <div><span>Pending payments</span><strong id="adminPendingPayments">0</strong></div>
+                  <div><span>Active students</span><strong id="adminActiveStudents">0</strong></div>
+                </div>
+                <ul class="activity-list" id="adminActivityList"><li>Loading activity...</li></ul>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Students sub-page -->
+        <section class="page" id="admin-students" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Students</p>
+                <h1>Student management</h1>
+              </div>
+              <a class="secondary-action" href="#admin">← Admin</a>
+            </div>
+
+            <section class="workspace-panel">
               <div class="panel-heading">
                 <div>
-                  <p class="eyebrow">Teacher assignment</p>
-                  <h2>Assign students to teachers</h2>
+                  <p class="eyebrow">Student development</p>
+                  <h2>Progress and next actions</h2>
                 </div>
-                <span class="pill">Manual routing</span>
+                <span class="pill" id="adminStorageBadge">Backend</span>
               </div>
-              <form class="admin-form" id="adminAssignmentForm">
-                <div class="form-grid two-columns">
-                  <label>
-                    Student
-                    <select name="studentId" required>
-                      <option value="">Choose a student</option>
-                    </select>
-                  </label>
-                  <label>
-                    Teacher
-                    <select name="teacherId" required>
-                      <option value="">Choose a teacher</option>
-                    </select>
-                  </label>
-                </div>
-                <label>
-                  Assignment notes
-                  <textarea
-                    name="notes"
-                    rows="3"
-                    placeholder="Reason, class fit, schedule, or focus area."
-                  ></textarea>
-                </label>
-                <button class="primary-action" type="submit">Assign teacher</button>
-                <p class="feedback-text" id="adminAssignmentFeedback"></p>
-              </form>
               <div class="admin-table-wrap">
                 <table class="admin-table">
                   <thead>
                     <tr>
                       <th>Student</th>
-                      <th>Teacher</th>
-                      <th>Source</th>
-                      <th>Notes</th>
-                      <th></th>
+                      <th>Tests</th>
+                      <th>Level</th>
+                      <th>Goal</th>
+                      <th>Progress</th>
+                      <th>Difficulty</th>
+                      <th>Recommendation</th>
                     </tr>
                   </thead>
-                  <tbody id="adminAssignmentRows">
-                    <tr>
-                      <td colspan="5">Loading teacher assignments...</td>
-                    </tr>
-                  </tbody>
+                  <tbody id="adminProgressRows"><tr><td colspan="7">Loading...</td></tr></tbody>
                 </table>
               </div>
             </section>
 
-            <div class="admin-management-grid">
-              <section class="workspace-panel admin-manager">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Students</p>
-                    <h2>Register or edit a student</h2>
-                  </div>
-                  <span class="pill">Profiles</span>
+            <section class="workspace-panel admin-manager">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Students</p>
+                  <h2>Register or edit a student</h2>
                 </div>
-                <form class="admin-form" id="adminStudentForm">
-                  <input type="hidden" name="id" />
-                  <div class="form-grid two-columns">
-                    <label>
-                      Full name
-                      <input type="text" name="fullName" required />
-                    </label>
-                    <label>
-                      Email
-                      <input type="email" name="email" required />
-                    </label>
-                    <label>
-                      Temporary password
-                      <input type="password" name="password" placeholder="Only for new students" />
-                    </label>
-                    <label>
-                      Native language
-                      <input type="text" name="nativeLanguage" value="Portuguese" />
-                    </label>
-                    <label>
-                      Level
-                      <select name="level">
-                        <option>Beginner</option>
-                        <option>Elementary</option>
-                        <option>Intermediate</option>
-                        <option>Upper Intermediate</option>
-                        <option>Advanced</option>
-                      </select>
-                    </label>
-                    <label>
-                      Goal
-                      <select name="goal">
-                        <option>Daily conversation</option>
-                        <option>Work and meetings</option>
-                        <option>Travel</option>
-                        <option>Interviews</option>
-                        <option>Pronunciation</option>
-                      </select>
-                    </label>
-                  </div>
-                  <label>
-                    Notes
-                    <textarea name="notes" rows="3"></textarea>
+                <span class="pill">Profiles</span>
+              </div>
+              <form class="admin-form" id="adminStudentForm">
+                <input type="hidden" name="id" />
+                <div class="form-grid two-columns">
+                  <label>Full name<input type="text" name="fullName" required /></label>
+                  <label>Email<input type="email" name="email" required /></label>
+                  <label>Temporary password<input type="password" name="password" placeholder="Only for new students" /></label>
+                  <label>Native language<input type="text" name="nativeLanguage" value="Portuguese" /></label>
+                  <label>Level
+                    <select name="level">
+                      <option>Beginner</option><option>Elementary</option><option>Intermediate</option>
+                      <option>Upper Intermediate</option><option>Advanced</option>
+                    </select>
                   </label>
-                  <div class="admin-form-actions">
-                    <button class="primary-action" type="submit">Save student</button>
-                    <button class="secondary-action" type="button" data-reset-admin-form="adminStudentForm">
-                      New
-                    </button>
-                  </div>
-                  <p class="feedback-text" id="adminStudentFeedback"></p>
-                </form>
-                <div class="admin-table-wrap">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Level</th>
-                        <th>Goal</th>
-                        <th>Teacher</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="adminStudentRows"></tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section class="workspace-panel admin-manager">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Teachers</p>
-                    <h2>Register or edit a teacher</h2>
-                  </div>
-                  <span class="pill">Staff</span>
-                </div>
-                <form class="admin-form" id="adminTeacherForm">
-                  <input type="hidden" name="id" />
-                  <div class="form-grid two-columns">
-                    <label>
-                      Full name
-                      <input type="text" name="fullName" required />
-                    </label>
-                    <label>
-                      Email
-                      <input type="email" name="email" required />
-                    </label>
-                    <label>
-                      Temporary password
-                      <input type="password" name="password" placeholder="Only for new teachers" />
-                    </label>
-                    <label>
-                      Specialty
-                      <input type="text" name="specialty" placeholder="Pronunciation, business English..." />
-                    </label>
-                    <label>
-                      Status
-                      <select name="status">
-                        <option>active</option>
-                        <option>paused</option>
-                        <option>inactive</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div class="admin-form-actions">
-                    <button class="primary-action" type="submit">Save teacher</button>
-                    <button class="secondary-action" type="button" data-reset-admin-form="adminTeacherForm">
-                      New
-                    </button>
-                  </div>
-                  <p class="feedback-text" id="adminTeacherFeedback"></p>
-                </form>
-                <div class="admin-table-wrap">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Specialty</th>
-                        <th>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="adminTeacherRows"></tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section class="workspace-panel admin-manager">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Plans</p>
-                    <h2>Manage prices and plans</h2>
-                  </div>
-                  <span class="pill">Billing</span>
-                </div>
-                <form class="admin-form" id="adminPlanForm">
-                  <input type="hidden" name="id" />
-                  <div class="form-grid two-columns">
-                    <label>
-                      Plan name
-                      <input type="text" name="name" required />
-                    </label>
-                    <label>
-                      Price
-                      <input type="number" name="price" min="0" step="0.01" required />
-                    </label>
-                    <label>
-                      Billing cycle
-                      <select name="billingCycle">
-                        <option>monthly</option>
-                        <option>quarterly</option>
-                        <option>yearly</option>
-                      </select>
-                    </label>
-                    <label>
-                      Status
-                      <select name="status">
-                        <option>active</option>
-                        <option>draft</option>
-                        <option>archived</option>
-                      </select>
-                    </label>
-                  </div>
-                  <label>
-                    Description
-                    <textarea name="description" rows="3"></textarea>
+                  <label>Goal
+                    <select name="goal">
+                      <option>Daily conversation</option><option>Work and meetings</option>
+                      <option>Travel</option><option>Interviews</option><option>Pronunciation</option>
+                    </select>
                   </label>
-                  <div class="admin-form-actions">
-                    <button class="primary-action" type="submit">Save plan</button>
-                    <button class="secondary-action" type="button" data-reset-admin-form="adminPlanForm">
-                      New
-                    </button>
-                  </div>
-                  <p class="feedback-text" id="adminPlanFeedback"></p>
-                </form>
-                <div class="admin-table-wrap">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Plan</th>
-                        <th>Price</th>
-                        <th>Cycle</th>
-                        <th>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="adminPlanRows"></tbody>
-                  </table>
                 </div>
-              </section>
+                <label>Notes<textarea name="notes" rows="3"></textarea></label>
+                <div class="admin-form-actions">
+                  <button class="primary-action" type="submit">Save student</button>
+                  <button class="secondary-action" type="button" data-reset-admin-form="adminStudentForm">New</button>
+                </div>
+                <p class="feedback-text" id="adminStudentFeedback"></p>
+              </form>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Name</th><th>Email</th><th>Level</th><th>Goal</th><th>Teacher</th><th></th></tr></thead>
+                  <tbody id="adminStudentRows"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
 
-              <section class="workspace-panel admin-manager">
-                <div class="panel-heading">
-                  <div>
-                    <p class="eyebrow">Courses</p>
-                    <h2>Manage course catalog</h2>
-                  </div>
-                  <span class="pill">Learning</span>
-                </div>
-                <form class="admin-form" id="adminCourseForm">
-                  <input type="hidden" name="id" />
-                  <div class="form-grid two-columns">
-                    <label>
-                      Course title
-                      <input type="text" name="title" required />
-                    </label>
-                    <label>
-                      Level
-                      <input type="text" name="level" placeholder="Beginner, Intermediate..." />
-                    </label>
-                    <label>
-                      Duration
-                      <input type="text" name="duration" placeholder="6 weeks" />
-                    </label>
-                    <label>
-                      Status
-                      <select name="status">
-                        <option>draft</option>
-                        <option>published</option>
-                        <option>archived</option>
-                      </select>
-                    </label>
-                  </div>
-                  <label>
-                    Description
-                    <textarea name="description" rows="3"></textarea>
-                  </label>
-                  <div class="admin-form-actions">
-                    <button class="primary-action" type="submit">Save course</button>
-                    <button class="secondary-action" type="button" data-reset-admin-form="adminCourseForm">
-                      New
-                    </button>
-                  </div>
-                  <p class="feedback-text" id="adminCourseFeedback"></p>
-                </form>
-                <div class="admin-table-wrap">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Course</th>
-                        <th>Level</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="adminCourseRows"></tbody>
-                  </table>
-                </div>
-              </section>
+        <!-- Teachers sub-page -->
+        <section class="page" id="admin-teachers" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Teachers</p>
+                <h1>Teacher management</h1>
+              </div>
+              <a class="secondary-action" href="#admin">← Admin</a>
             </div>
+            <section class="workspace-panel admin-manager">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Teachers</p>
+                  <h2>Register or edit a teacher</h2>
+                </div>
+                <span class="pill">Staff</span>
+              </div>
+              <form class="admin-form" id="adminTeacherForm">
+                <input type="hidden" name="id" />
+                <div class="form-grid two-columns">
+                  <label>Full name<input type="text" name="fullName" required /></label>
+                  <label>Email<input type="email" name="email" required /></label>
+                  <label>Temporary password<input type="password" name="password" placeholder="Only for new teachers" /></label>
+                  <label>Specialty<input type="text" name="specialty" placeholder="Pronunciation, business English..." /></label>
+                  <label>Status
+                    <select name="status">
+                      <option>active</option><option>paused</option><option>inactive</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="admin-form-actions">
+                  <button class="primary-action" type="submit">Save teacher</button>
+                  <button class="secondary-action" type="button" data-reset-admin-form="adminTeacherForm">New</button>
+                </div>
+                <p class="feedback-text" id="adminTeacherFeedback"></p>
+              </form>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Status</th><th></th></tr></thead>
+                  <tbody id="adminTeacherRows"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Assignments sub-page -->
+        <section class="page" id="admin-assignments" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Teacher assignment</p>
+                <h1>Assign students to teachers</h1>
+              </div>
+              <a class="secondary-action" href="#admin">← Admin</a>
+            </div>
+            <section class="workspace-panel admin-assignment-panel">
+              <form class="admin-form" id="adminAssignmentForm">
+                <div class="form-grid two-columns">
+                  <label>Student<select name="studentId" required><option value="">Choose a student</option></select></label>
+                  <label>Teacher<select name="teacherId" required><option value="">Choose a teacher</option></select></label>
+                </div>
+                <label>Assignment notes<textarea name="notes" rows="3" placeholder="Reason, class fit, schedule, or focus area."></textarea></label>
+                <button class="primary-action" type="submit">Assign teacher</button>
+                <p class="feedback-text" id="adminAssignmentFeedback"></p>
+              </form>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Student</th><th>Teacher</th><th>Source</th><th>Notes</th><th></th></tr></thead>
+                  <tbody id="adminAssignmentRows"><tr><td colspan="5">Loading teacher assignments...</td></tr></tbody>
+                </table>
+              </div>
+              <div class="admin-pagination" id="adminAssignmentPagination" hidden>
+                <button type="button" class="secondary-action" id="loadMoreAssignmentsBtn">Load more</button>
+                <p class="feedback-text" id="adminAssignmentPageInfo"></p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Plans sub-page -->
+        <section class="page" id="admin-plans" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Plans</p>
+                <h1>Manage prices and plans</h1>
+              </div>
+              <a class="secondary-action" href="#admin">← Admin</a>
+            </div>
+            <section class="workspace-panel admin-manager">
+              <form class="admin-form" id="adminPlanForm">
+                <input type="hidden" name="id" />
+                <div class="form-grid two-columns">
+                  <label>Plan name<input type="text" name="name" required /></label>
+                  <label>Price<input type="number" name="price" min="0" step="0.01" required /></label>
+                  <label>Billing cycle
+                    <select name="billingCycle">
+                      <option>monthly</option><option>quarterly</option><option>yearly</option>
+                    </select>
+                  </label>
+                  <label>Status
+                    <select name="status">
+                      <option>active</option><option>draft</option><option>archived</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Description<textarea name="description" rows="3"></textarea></label>
+                <div class="admin-form-actions">
+                  <button class="primary-action" type="submit">Save plan</button>
+                  <button class="secondary-action" type="button" data-reset-admin-form="adminPlanForm">New</button>
+                </div>
+                <p class="feedback-text" id="adminPlanFeedback"></p>
+              </form>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Plan</th><th>Price</th><th>Cycle</th><th>Status</th><th></th></tr></thead>
+                  <tbody id="adminPlanRows"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Courses sub-page -->
+        <section class="page" id="admin-courses" data-page>
+          <div class="section-wrap">
+            <div class="section-heading courses-heading">
+              <div>
+                <p class="eyebrow">Courses</p>
+                <h1>Manage course catalog</h1>
+              </div>
+              <a class="secondary-action" href="#admin">← Admin</a>
+            </div>
+            <section class="workspace-panel admin-manager">
+              <form class="admin-form" id="adminCourseForm">
+                <input type="hidden" name="id" />
+                <div class="form-grid two-columns">
+                  <label>Course title<input type="text" name="title" required /></label>
+                  <label>Level<input type="text" name="level" placeholder="Beginner, Intermediate..." /></label>
+                  <label>Duration<input type="text" name="duration" placeholder="6 weeks" /></label>
+                  <label>Status
+                    <select name="status">
+                      <option>draft</option><option>published</option><option>archived</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Description<textarea name="description" rows="3"></textarea></label>
+                <div class="admin-form-actions">
+                  <button class="primary-action" type="submit">Save course</button>
+                  <button class="secondary-action" type="button" data-reset-admin-form="adminCourseForm">New</button>
+                </div>
+                <p class="feedback-text" id="adminCourseFeedback"></p>
+              </form>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Course</th><th>Level</th><th>Duration</th><th>Status</th><th></th></tr></thead>
+                  <tbody id="adminCourseRows"></tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </section>
       </main>

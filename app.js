@@ -106,6 +106,12 @@ const adminRevenue = document.querySelector("#adminRevenue");
 const adminStorageBadge = document.querySelector("#adminStorageBadge");
 const adminPersistenceNote = document.querySelector("#adminPersistenceNote");
 const adminProgressRows = document.querySelector("#adminProgressRows");
+const loadMoreAssignmentsBtn = document.querySelector("#loadMoreAssignmentsBtn");
+const adminAssignmentPageInfo = document.querySelector("#adminAssignmentPageInfo");
+const adminAssignmentPagination = document.querySelector("#adminAssignmentPagination");
+
+const ADMIN_PAGE_SIZE = 10;
+let adminAssignmentOffset = ADMIN_PAGE_SIZE;
 const adminPendingPayments = document.querySelector("#adminPendingPayments");
 const adminActiveStudents = document.querySelector("#adminActiveStudents");
 const adminActivityList = document.querySelector("#adminActivityList");
@@ -320,8 +326,13 @@ const adminState = {
   courses: [],
 };
 
-const protectedRoutes = ["dashboard", "lessons", "admin", "account", "teacher"];
-const studentOnlyRoutes = ["dashboard", "lessons"];
+const protectedRoutes = [
+  "dashboard", "lessons", "my-tests", "test-detail", "account",
+  "admin", "admin-students", "admin-teachers", "admin-assignments", "admin-plans", "admin-courses",
+  "teacher",
+];
+const studentOnlyRoutes = ["dashboard", "lessons", "my-tests", "test-detail"];
+const adminOnlyRoutes = ["admin", "admin-students", "admin-teachers", "admin-assignments", "admin-plans", "admin-courses"];
 
 function isStudent() {
   return state.isSignedIn && state.userRole === "student";
@@ -363,7 +374,7 @@ function getSafeRoute(routeName) {
     return getDefaultRouteForRole();
   }
 
-  if (requestedRoute === "admin" && !isAdmin()) {
+  if (adminOnlyRoutes.includes(requestedRoute) && !isAdmin()) {
     return getDefaultRouteForRole();
   }
 
@@ -394,6 +405,28 @@ function setRoute(routeName) {
 
   if (safeRoute === "admin") {
     renderAdminSummary();
+  }
+
+  if (safeRoute === "admin-students") {
+    renderAdminSummary();
+    renderAdminResources();
+  }
+
+  if (safeRoute === "admin-teachers") {
+    renderAdminResources();
+  }
+
+  if (safeRoute === "admin-assignments") {
+    adminAssignmentOffset = ADMIN_PAGE_SIZE;
+    renderAdminResources();
+  }
+
+  if (safeRoute === "admin-plans") {
+    renderAdminResources();
+  }
+
+  if (safeRoute === "admin-courses") {
+    renderAdminResources();
   }
 
   if (safeRoute === "teacher") {
@@ -1409,7 +1442,7 @@ function updateAdminResources(resources) {
     (item) => [item.title, item.level || "-", item.duration || "-", item.status],
     5,
   );
-  adminAssignmentRows.innerHTML = renderAssignmentRows();
+  renderAssignmentRowsPaginated();
 }
 
 function renderAdminAssignmentOptions() {
@@ -1430,33 +1463,40 @@ function renderAdminAssignmentOptions() {
   adminAssignmentForm.elements.teacherId.innerHTML = `<option value="">Choose a teacher</option>${teacherOptions}`;
 }
 
-function renderAssignmentRows() {
-  if (!adminState.assignments.length) {
-    return `<tr><td colspan="5">No teacher assignments yet.</td></tr>`;
+function renderAssignmentRowsPaginated() {
+  const total = adminState.assignments.length;
+  const visible = adminState.assignments.slice(0, adminAssignmentOffset);
+
+  if (!total) {
+    adminAssignmentRows.innerHTML = `<tr><td colspan="5">No teacher assignments yet.</td></tr>`;
+    if (adminAssignmentPagination) adminAssignmentPagination.hidden = true;
+    return;
   }
 
-  return adminState.assignments
-    .map(
-      (assignment) => `
-        <tr>
-          <td>${escapeHtml(assignment.studentName)}</td>
-          <td>${escapeHtml(assignment.teacherName)}</td>
-          <td>${escapeHtml(assignment.source || "manual")}</td>
-          <td>${escapeHtml(assignment.notes || "-")}</td>
-          <td>
-            <button
-              class="admin-edit-button"
-              type="button"
-              data-admin-assignment-student="${escapeHtml(assignment.studentId)}"
-              data-admin-assignment-teacher="${escapeHtml(assignment.teacherId)}"
-            >
-              Reassign
-            </button>
-          </td>
-        </tr>
-      `,
-    )
-    .join("");
+  adminAssignmentRows.innerHTML = visible.map(renderSingleAssignmentRow).join("");
+
+  if (adminAssignmentPagination) {
+    adminAssignmentPagination.hidden = total <= ADMIN_PAGE_SIZE;
+    if (adminAssignmentPageInfo) adminAssignmentPageInfo.textContent = `Showing ${visible.length} of ${total}`;
+    if (loadMoreAssignmentsBtn) loadMoreAssignmentsBtn.hidden = adminAssignmentOffset >= total;
+  }
+}
+
+function renderSingleAssignmentRow(assignment) {
+  return `
+    <tr>
+      <td>${escapeHtml(assignment.studentName)}</td>
+      <td>${escapeHtml(assignment.teacherName)}</td>
+      <td>${escapeHtml(assignment.source || "manual")}</td>
+      <td>${escapeHtml(assignment.notes || "-")}</td>
+      <td>
+        <button class="admin-edit-button" type="button"
+          data-admin-assignment-student="${escapeHtml(assignment.studentId)}"
+          data-admin-assignment-teacher="${escapeHtml(assignment.teacherId)}">
+          Reassign
+        </button>
+      </td>
+    </tr>`;
 }
 
 function renderRows(items, type, getCells, colSpan) {
@@ -1752,8 +1792,18 @@ function stopClassRecording() {
 
 menuButton.addEventListener("click", () => nav.classList.toggle("open"));
 logoutButton.addEventListener("click", signOut);
-refreshAdminButton.addEventListener("click", renderAdminSummary);
+refreshAdminButton.addEventListener("click", () => {
+  renderAdminSummary();
+  renderAdminResources();
+});
 refreshTeacherButton.addEventListener("click", renderTeacherSummary);
+
+if (loadMoreAssignmentsBtn) {
+  loadMoreAssignmentsBtn.addEventListener("click", () => {
+    adminAssignmentOffset += ADMIN_PAGE_SIZE;
+    renderAssignmentRowsPaginated();
+  });
+}
 copyTeacherInviteButton.addEventListener("click", async () => {
   const link = teacherInviteLink.value;
 
@@ -1971,15 +2021,26 @@ function cleanForSpeech(text) {
     .trim();
 }
 
+const SPEAKER_LABEL_PATTERN = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
+
+function getSpeechLines(text) {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\*\*([A-Za-z][A-Za-z ]{0,20}):\*\*/g, "$1:")
+    .replace(/([.!?])\s+([A-Z][a-zA-Z ]{0,20}:\s*)/g, "$1\n$2")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 function buildSpeechQueue(text) {
-  const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
-  const rawLines = text.split(/\n+/).filter(Boolean);
-  const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
+  const rawLines = getSpeechLines(text);
+  const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => SPEAKER_LABEL_PATTERN.test(l));
   const speakerIndexMap = {};
   let speakerCount = 0;
 
   return rawLines.map((line) => {
-    const match = line.match(speakerPattern);
+    const match = line.match(SPEAKER_LABEL_PATTERN);
     const speaker = match ? match[1].trim() : "_default";
     const content = cleanForSpeech(match ? line.slice(match[0].length) : line);
     if (!(speaker in speakerIndexMap)) {
@@ -2125,15 +2186,14 @@ async function playElevenLabsAudio(ctx, arrayBuffer) {
 }
 
 async function speakTextElevenLabsBuffered(text, ctx) {
-  const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
-  const rawLines = text.split(/\n+/).filter(Boolean);
-  const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
+  const rawLines = getSpeechLines(text);
+  const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => SPEAKER_LABEL_PATTERN.test(l));
 
   const speakerIndexMap = {};
   let speakerCount = 0;
 
   const queue = rawLines.map((line) => {
-    const m = line.match(speakerPattern);
+    const m = line.match(SPEAKER_LABEL_PATTERN);
     const speaker = m ? m[1].trim() : "_default";
     const content = cleanForSpeech(m ? line.slice(m[0].length) : line);
     if (!(speaker in speakerIndexMap)) {
@@ -2184,9 +2244,8 @@ function speakTextBrowser(text) {
     const voices = window.speechSynthesis.getVoices();
 
     // Split the RAW text first (before cleaning removes \n), then clean each line
-    const speakerPattern = /^([A-Za-z][A-Za-z ]{0,20}):\s*/;
-    const rawLines = text.split(/\n+/).filter(Boolean);
-    const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => speakerPattern.test(l));
+    const rawLines = getSpeechLines(text);
+    const hasSpeakers = rawLines.length > 1 && rawLines.some((l) => SPEAKER_LABEL_PATTERN.test(l));
 
     if (!hasSpeakers) {
       // Single voice — clean the whole text at once
@@ -2221,7 +2280,7 @@ function speakTextBrowser(text) {
     }
 
     const queue = rawLines.map((line) => {
-      const m = line.match(speakerPattern);
+      const m = line.match(SPEAKER_LABEL_PATTERN);
       const speaker = m ? m[1].trim() : "_default";
       const rawContent = m ? line.slice(m[0].length) : line;
       return { speaker, content: cleanForSpeech(rawContent) }; // Clean each line individually

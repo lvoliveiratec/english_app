@@ -280,8 +280,10 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#adminStudentsCount")).not.toHaveText("0");
     await expect(page.locator("#adminTeachersCount")).not.toHaveText("0");
     await expect(page.locator("#adminRevenue")).toContainText("$");
-    await expect(page.locator("#adminProgressRows")).not.toContainText("No student progress yet.");
 
+    // Students sub-page
+    await page.goto("/#admin-students");
+    await expect(page.locator("#adminProgressRows")).not.toContainText("No student progress yet.");
     const studentForm = page.locator("#adminStudentForm");
     await studentForm.scrollIntoViewIfNeeded();
     await studentForm.getByLabel("Full name").fill("Admin Created Student");
@@ -295,6 +297,8 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#adminStudentFeedback")).toHaveText("Record created.");
     await expect(page.locator("#adminStudentRows")).toContainText("Admin Created Student");
 
+    // Teachers sub-page
+    await page.goto("/#admin-teachers");
     const teacherForm = page.locator("#adminTeacherForm");
     await teacherForm.scrollIntoViewIfNeeded();
     await teacherForm.getByLabel("Full name").fill("Admin Created Teacher");
@@ -305,6 +309,8 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#adminTeacherFeedback")).toHaveText("Record created.");
     await expect(page.locator("#adminTeacherRows")).toContainText("Admin Created Teacher");
 
+    // Assignments sub-page
+    await page.goto("/#admin-assignments");
     const assignmentForm = page.locator("#adminAssignmentForm");
     await assignmentForm.scrollIntoViewIfNeeded();
     await assignmentForm
@@ -315,12 +321,12 @@ test.describe("FluentPath English smoke flow", () => {
       .selectOption({ label: "Admin Created Teacher - Pronunciation" });
     await assignmentForm.getByLabel("Assignment notes").fill("Manual admin assignment.");
     await assignmentForm.getByRole("button", { name: "Assign teacher" }).click();
-    await expect(page.locator("#adminAssignmentFeedback")).toHaveText(
-      "Student assigned to teacher.",
-    );
+    await expect(page.locator("#adminAssignmentFeedback")).toHaveText("Student assigned to teacher.");
     await expect(page.locator("#adminAssignmentRows")).toContainText("Admin Created Student");
     await expect(page.locator("#adminAssignmentRows")).toContainText("Admin Created Teacher");
 
+    // Plans sub-page
+    await page.goto("/#admin-plans");
     const planForm = page.locator("#adminPlanForm");
     await planForm.scrollIntoViewIfNeeded();
     await planForm.getByLabel("Plan name").fill(planName);
@@ -332,6 +338,8 @@ test.describe("FluentPath English smoke flow", () => {
     await expect(page.locator("#adminPlanRows")).toContainText(planName);
     await expect(page.locator("#adminPlanRows")).toContainText("$89.90");
 
+    // Courses sub-page
+    await page.goto("/#admin-courses");
     const courseForm = page.locator("#adminCourseForm");
     await courseForm.scrollIntoViewIfNeeded();
     await courseForm.getByLabel("Course title").fill(courseName);
