@@ -1310,6 +1310,41 @@ class PostgresStorage {
       country: address.country || "",
     };
   }
+
+  async sendStudentNotification(studentId, { message, sentById }) {
+    const result = await this.pool.query(
+      `insert into student_notifications (student_id, sent_by_id, message)
+       values ($1, $2, $3)
+       returning id, student_id, message, read_at, created_at`,
+      [studentId, sentById || null, message],
+    );
+    return result.rows[0];
+  }
+
+  async getStudentNotifications(studentId) {
+    const result = await this.pool.query(
+      `select id, message, read_at, created_at
+       from student_notifications
+       where student_id = $1
+       order by created_at desc
+       limit 20`,
+      [studentId],
+    );
+    return result.rows.map((r) => ({
+      id: r.id,
+      message: r.message,
+      readAt: r.read_at,
+      createdAt: r.created_at,
+    }));
+  }
+
+  async markNotificationRead(notificationId, studentId) {
+    await this.pool.query(
+      `update student_notifications set read_at = now()
+       where id = $1 and student_id = $2 and read_at is null`,
+      [notificationId, studentId],
+    );
+  }
 }
 
 module.exports = {

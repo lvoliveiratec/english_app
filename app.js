@@ -20,6 +20,8 @@ const lessonGrid = document.querySelector("#lessonGrid");
 const myTestsContent = document.querySelector("#myTestsContent");
 const testDetailContent = document.querySelector("#testDetailContent");
 const testDetailTitle = document.querySelector("#testDetailTitle");
+const studentNotificationsPanel = document.querySelector("#studentNotificationsPanel");
+const studentNotificationsList = document.querySelector("#studentNotificationsList");
 const testDetailEyebrow = document.querySelector("#testDetailEyebrow");
 const testDetailBack = document.querySelector("#testDetailBack");
 const studentNavLinks = [...document.querySelectorAll("[data-student-nav]")];
@@ -618,6 +620,37 @@ function buildTeacherInviteUrl(code) {
   url.search = `?invite=${encodeURIComponent(code)}`;
   url.hash = "signup";
   return url.toString();
+}
+
+async function fetchAndRenderNotifications() {
+  if (!isStudent() || !studentNotificationsPanel) return;
+  try {
+    const { notifications } = await apiRequest("/api/notifications");
+    const unread = notifications.filter((n) => !n.readAt);
+    studentNotificationsPanel.hidden = unread.length === 0;
+    if (unread.length === 0) return;
+
+    studentNotificationsList.innerHTML = unread
+      .map(
+        (n) => `
+        <div class="student-notification" data-notif-id="${escapeHtml(n.id)}">
+          <div class="notif-body">
+            <span class="notif-icon">📌</span>
+            <div>
+              <p class="eyebrow">Action from your school</p>
+              <p class="notif-message">${escapeHtml(n.message)}</p>
+            </div>
+          </div>
+          <button type="button" class="secondary-action notif-dismiss-btn" data-notif-id="${escapeHtml(n.id)}"
+            style="font-size:0.82rem;padding:0.3rem 0.8rem;flex-shrink:0">
+            Got it ✓
+          </button>
+        </div>`,
+      )
+      .join("");
+  } catch {
+    // non-critical
+  }
 }
 
 async function fetchAndApplyPlacement() {
@@ -1347,11 +1380,19 @@ function updateAdminSummary(summary) {
               <td>${escapeHtml(item.completion)}%</td>
               <td>${escapeHtml(item.difficulty)}</td>
               <td>${escapeHtml(item.recommendation)}</td>
+              <td>${item.studentId ? `
+                <button class="secondary-action admin-send-notif-btn"
+                  style="padding:0.3rem 0.7rem;font-size:0.82rem;white-space:nowrap"
+                  data-student-id="${escapeHtml(item.studentId)}"
+                  data-student-name="${escapeHtml(item.studentName)}"
+                  data-message="${escapeHtml(item.recommendation)}">
+                  📤 Send
+                </button>` : "—"}</td>
             </tr>
           `,
         )
         .join("")
-    : `<tr><td colspan="6">No student progress yet.</td></tr>`;
+    : `<tr><td colspan="8">No student progress yet.</td></tr>`;
 
   adminActivityList.innerHTML = summary.recentActivity
     .map((item) => `<li>${escapeHtml(item)}</li>`)
@@ -1424,25 +1465,11 @@ function updateAdminResources(resources) {
   if (adminStudentLevelFilter) adminStudentLevelFilter.value = "";
   if (adminStudentGoalFilter) adminStudentGoalFilter.value = "";
   if (adminStudentTeacherFilter) adminStudentTeacherFilter.value = "";
-  adminTeacherRows.innerHTML = renderRows(
-    adminState.teachers,
-    "teachers",
-    (item) => [item.fullName, item.email, item.specialty || "-", item.status],
-    5,
-  );
-  adminPlanRows.innerHTML = renderRows(
-    adminState.plans,
-    "plans",
-    (item) => [item.name, formatCurrency(item.priceCents), item.billingCycle, item.status],
-    5,
-  );
-  adminCourseRows.innerHTML = renderRows(
-    adminState.courses,
-    "courses",
-    (item) => [item.title, item.level || "-", item.duration || "-", item.status],
-    5,
-  );
-  renderAssignmentRowsPaginated();
+  populateTeacherSpecialtyFilter();
+  renderFilteredTeachers();
+  renderFilteredPlans();
+  renderFilteredCourses();
+  renderFilteredAssignments();
 }
 
 function populateStudentTeacherFilter() {
@@ -1489,6 +1516,117 @@ function renderFilteredStudents() {
     "students",
     (item) => [item.fullName, item.email, item.level, item.goal, item.teacherName || "Unassigned"],
     6,
+  );
+}
+
+// ── Teachers filter ────────────────────────────────────────────────────
+const adminTeacherSearch = document.querySelector("#adminTeacherSearch");
+const adminTeacherSpecialtyFilter = document.querySelector("#adminTeacherSpecialtyFilter");
+const adminTeacherStatusFilter = document.querySelector("#adminTeacherStatusFilter");
+const adminTeacherFilterInfo = document.querySelector("#adminTeacherFilterInfo");
+const clearTeacherFiltersBtn = document.querySelector("#clearTeacherFiltersBtn");
+
+function populateTeacherSpecialtyFilter() {
+  if (!adminTeacherSpecialtyFilter) return;
+  const current = adminTeacherSpecialtyFilter.value;
+  const specialties = [...new Set(adminState.teachers.map((t) => t.specialty).filter(Boolean))].sort();
+  adminTeacherSpecialtyFilter.innerHTML =
+    `<option value="">All specialties</option>` +
+    specialties.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+  if (current) adminTeacherSpecialtyFilter.value = current;
+}
+
+function renderFilteredTeachers() {
+  const query = (adminTeacherSearch?.value || "").toLowerCase().trim();
+  const specialty = adminTeacherSpecialtyFilter?.value || "";
+  const status = adminTeacherStatusFilter?.value || "";
+  const filtered = adminState.teachers.filter((t) => {
+    if (query && !t.fullName.toLowerCase().includes(query) && !t.email.toLowerCase().includes(query)) return false;
+    if (specialty && t.specialty !== specialty) return false;
+    if (status && t.status !== status) return false;
+    return true;
+  });
+  if (adminTeacherFilterInfo) {
+    adminTeacherFilterInfo.textContent = filtered.length < adminState.teachers.length
+      ? `Showing ${filtered.length} of ${adminState.teachers.length} teachers` : "";
+  }
+  adminTeacherRows.innerHTML = renderRows(filtered, "teachers", (t) => [t.fullName, t.email, t.specialty || "-", t.status], 5);
+}
+
+// ── Assignments filter ─────────────────────────────────────────────────
+const adminAssignmentSearch = document.querySelector("#adminAssignmentSearch");
+const adminAssignmentSourceFilter = document.querySelector("#adminAssignmentSourceFilter");
+const adminAssignmentFilterInfo = document.querySelector("#adminAssignmentFilterInfo");
+const clearAssignmentFiltersBtn = document.querySelector("#clearAssignmentFiltersBtn");
+
+function renderFilteredAssignments() {
+  const query = (adminAssignmentSearch?.value || "").toLowerCase().trim();
+  const source = adminAssignmentSourceFilter?.value || "";
+  const filtered = adminState.assignments.filter((a) => {
+    if (query && !a.studentName.toLowerCase().includes(query) && !a.teacherName.toLowerCase().includes(query)) return false;
+    if (source && (a.source || "manual") !== source) return false;
+    return true;
+  });
+  if (adminAssignmentFilterInfo) {
+    adminAssignmentFilterInfo.textContent = filtered.length < adminState.assignments.length
+      ? `Showing ${filtered.length} of ${adminState.assignments.length} assignments` : "";
+  }
+  const visible = filtered.slice(0, adminAssignmentOffset);
+  adminAssignmentRows.innerHTML = visible.length ? visible.map(renderSingleAssignmentRow).join("") : `<tr><td colspan="5">No assignments match the filter.</td></tr>`;
+  if (adminAssignmentPagination) {
+    adminAssignmentPagination.hidden = filtered.length <= ADMIN_PAGE_SIZE;
+    if (adminAssignmentPageInfo) adminAssignmentPageInfo.textContent = `Showing ${visible.length} of ${filtered.length}`;
+    if (loadMoreAssignmentsBtn) loadMoreAssignmentsBtn.hidden = adminAssignmentOffset >= filtered.length;
+  }
+}
+
+// ── Plans filter ───────────────────────────────────────────────────────
+const adminPlanSearch = document.querySelector("#adminPlanSearch");
+const adminPlanStatusFilter = document.querySelector("#adminPlanStatusFilter");
+const adminPlanFilterInfo = document.querySelector("#adminPlanFilterInfo");
+const clearPlanFiltersBtn = document.querySelector("#clearPlanFiltersBtn");
+
+function renderFilteredPlans() {
+  const query = (adminPlanSearch?.value || "").toLowerCase().trim();
+  const status = adminPlanStatusFilter?.value || "";
+  const filtered = adminState.plans.filter((p) => {
+    if (query && !p.name.toLowerCase().includes(query)) return false;
+    if (status && p.status !== status) return false;
+    return true;
+  });
+  if (adminPlanFilterInfo) {
+    adminPlanFilterInfo.textContent = filtered.length < adminState.plans.length
+      ? `Showing ${filtered.length} of ${adminState.plans.length} plans` : "";
+  }
+  adminPlanRows.innerHTML = renderRows(
+    filtered, "plans",
+    (p) => [p.name, `$${(p.priceCents / 100).toFixed(2)}`, p.billingCycle, p.status],
+    5,
+  );
+}
+
+// ── Courses filter ─────────────────────────────────────────────────────
+const adminCourseSearch = document.querySelector("#adminCourseSearch");
+const adminCourseStatusFilter = document.querySelector("#adminCourseStatusFilter");
+const adminCourseFilterInfo = document.querySelector("#adminCourseFilterInfo");
+const clearCourseFiltersBtn = document.querySelector("#clearCourseFiltersBtn");
+
+function renderFilteredCourses() {
+  const query = (adminCourseSearch?.value || "").toLowerCase().trim();
+  const status = adminCourseStatusFilter?.value || "";
+  const filtered = adminState.courses.filter((c) => {
+    if (query && !c.title.toLowerCase().includes(query)) return false;
+    if (status && c.status !== status) return false;
+    return true;
+  });
+  if (adminCourseFilterInfo) {
+    adminCourseFilterInfo.textContent = filtered.length < adminState.courses.length
+      ? `Showing ${filtered.length} of ${adminState.courses.length} courses` : "";
+  }
+  adminCourseRows.innerHTML = renderRows(
+    filtered, "courses",
+    (c) => [c.title, c.level || "-", c.duration || "-", c.status],
+    5,
   );
 }
 
@@ -1873,6 +2011,61 @@ if (clearStudentFiltersBtn) {
     renderFilteredStudents();
   });
 }
+
+// Teacher filters
+if (adminTeacherSearch) adminTeacherSearch.addEventListener("input", renderFilteredTeachers);
+if (adminTeacherSpecialtyFilter) adminTeacherSpecialtyFilter.addEventListener("change", renderFilteredTeachers);
+if (adminTeacherStatusFilter) adminTeacherStatusFilter.addEventListener("change", renderFilteredTeachers);
+if (clearTeacherFiltersBtn) clearTeacherFiltersBtn.addEventListener("click", () => {
+  if (adminTeacherSearch) adminTeacherSearch.value = "";
+  if (adminTeacherSpecialtyFilter) adminTeacherSpecialtyFilter.value = "";
+  if (adminTeacherStatusFilter) adminTeacherStatusFilter.value = "";
+  renderFilteredTeachers();
+});
+
+// Assignment filters
+if (adminAssignmentSearch) adminAssignmentSearch.addEventListener("input", renderFilteredAssignments);
+if (adminAssignmentSourceFilter) adminAssignmentSourceFilter.addEventListener("change", renderFilteredAssignments);
+if (clearAssignmentFiltersBtn) clearAssignmentFiltersBtn.addEventListener("click", () => {
+  if (adminAssignmentSearch) adminAssignmentSearch.value = "";
+  if (adminAssignmentSourceFilter) adminAssignmentSourceFilter.value = "";
+  renderFilteredAssignments();
+});
+
+// Plan filters
+if (adminPlanSearch) adminPlanSearch.addEventListener("input", renderFilteredPlans);
+if (adminPlanStatusFilter) adminPlanStatusFilter.addEventListener("change", renderFilteredPlans);
+if (clearPlanFiltersBtn) clearPlanFiltersBtn.addEventListener("click", () => {
+  if (adminPlanSearch) adminPlanSearch.value = "";
+  if (adminPlanStatusFilter) adminPlanStatusFilter.value = "";
+  renderFilteredPlans();
+});
+
+// Course filters
+if (adminCourseSearch) adminCourseSearch.addEventListener("input", renderFilteredCourses);
+if (adminCourseStatusFilter) adminCourseStatusFilter.addEventListener("change", renderFilteredCourses);
+if (clearCourseFiltersBtn) clearCourseFiltersBtn.addEventListener("click", () => {
+  if (adminCourseSearch) adminCourseSearch.value = "";
+  if (adminCourseStatusFilter) adminCourseStatusFilter.value = "";
+  renderFilteredCourses();
+});
+
+if (studentNotificationsList) {
+  studentNotificationsList.addEventListener("click", async (event) => {
+    const btn = event.target.closest(".notif-dismiss-btn");
+    if (!btn) return;
+    const notifId = btn.dataset.notifId;
+    try {
+      await apiRequest(`/api/notifications/${notifId}/read`, { method: "POST", body: "{}" });
+    } catch {}
+    const card = btn.closest(".student-notification");
+    if (card) card.remove();
+    if (!studentNotificationsList.querySelector(".student-notification")) {
+      studentNotificationsPanel.hidden = true;
+    }
+  });
+}
+
 copyTeacherInviteButton.addEventListener("click", async () => {
   const link = teacherInviteLink.value;
 
@@ -1933,7 +2126,10 @@ loginForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({ email, password }),
     });
     applySessionPayload(payload);
-    if (payload.user?.role === "student") fetchAndApplyPlacement();
+    if (payload.user?.role === "student") {
+      fetchAndApplyPlacement();
+      fetchAndRenderNotifications();
+    }
   } catch (error) {
     if (!shouldUseLocalFallback(error)) {
       loginFeedback.textContent = error.message;
@@ -2816,16 +3012,41 @@ audioFileInput.addEventListener("change", async () => {
   }
 });
 
-document.querySelector("#adminProgressRows").addEventListener("click", (event) => {
+document.querySelector("#adminProgressRows").addEventListener("click", async (event) => {
   const link = event.target.closest(".admin-test-link");
-  if (!link) return;
-  event.preventDefault();
-  sessionStorage.setItem("fp:testDetailStudentId", link.dataset.studentId);
-  sessionStorage.setItem("fp:testDetailStudentName", link.dataset.studentName);
-  sessionStorage.setItem("fp:testDetailRole", "admin");
-  sessionStorage.removeItem("fp:testDetailId");
-  sessionStorage.setItem("fp:testDetailBack", "admin");
-  navigateTo("test-detail");
+  if (link) {
+    event.preventDefault();
+    sessionStorage.setItem("fp:testDetailStudentId", link.dataset.studentId);
+    sessionStorage.setItem("fp:testDetailStudentName", link.dataset.studentName);
+    sessionStorage.setItem("fp:testDetailRole", "admin");
+    sessionStorage.removeItem("fp:testDetailId");
+    sessionStorage.setItem("fp:testDetailBack", "admin");
+    navigateTo("test-detail");
+    return;
+  }
+
+  const sendBtn = event.target.closest(".admin-send-notif-btn");
+  if (sendBtn) {
+    const { studentId, studentName, message } = sendBtn.dataset;
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending…";
+    try {
+      await apiRequest(`/api/admin/students/${studentId}/notify`, {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      });
+      sendBtn.textContent = "✓ Sent";
+      sendBtn.classList.add("score-high");
+      setTimeout(() => {
+        sendBtn.textContent = "📤 Send";
+        sendBtn.classList.remove("score-high");
+        sendBtn.disabled = false;
+      }, 2000);
+    } catch (error) {
+      sendBtn.textContent = "Error";
+      sendBtn.disabled = false;
+    }
+  }
 });
 
 testDetailContent.addEventListener("click", (event) => {

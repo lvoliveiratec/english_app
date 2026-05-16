@@ -221,3 +221,12 @@ create table if not exists payments (
   paid_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+create table if not exists student_notifications (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references users(id) on delete cascade,
+  sent_by_id uuid references users(id) on delete set null,
+  message text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);

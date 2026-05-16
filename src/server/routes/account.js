@@ -59,6 +59,23 @@ async function handleAccountRoutes({ request, response, parsedUrl, storage }) {
     return true;
   }
 
+  if (request.method === "GET" && parsedUrl.pathname === "/api/notifications") {
+    const session = await requireSession(request, response, storage);
+    if (!session) return true;
+    const notifications = await storage.getStudentNotifications(session.user.id);
+    sendJson(response, 200, { notifications });
+    return true;
+  }
+
+  if (request.method === "POST" && parsedUrl.pathname.match(/^\/api\/notifications\/([^/]+)\/read$/)) {
+    const session = await requireSession(request, response, storage);
+    if (!session) return true;
+    const notifId = parsedUrl.pathname.split("/")[3];
+    await storage.markNotificationRead(notifId, session.user.id);
+    sendJson(response, 200, { ok: true });
+    return true;
+  }
+
   return false;
 }
 

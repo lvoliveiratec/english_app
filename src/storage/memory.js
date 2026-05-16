@@ -957,6 +957,26 @@ class MemoryStorage {
         .find((f) => f.studentId === studentId && f.sourceType === "lesson_recording") || null
     );
   }
+
+  async sendStudentNotification(studentId, { message, sentById }) {
+    if (!this.state.notifications) this.state.notifications = [];
+    const n = { id: `notif_${Date.now()}`, studentId, sentById: sentById || null, message, readAt: null, createdAt: nowIso() };
+    this.state.notifications.push(n);
+    return n;
+  }
+
+  async getStudentNotifications(studentId) {
+    return [...(this.state.notifications || [])]
+      .filter((n) => n.studentId === studentId)
+      .reverse()
+      .slice(0, 20)
+      .map((n) => ({ id: n.id, message: n.message, readAt: n.readAt, createdAt: n.createdAt }));
+  }
+
+  async markNotificationRead(notificationId, studentId) {
+    const n = (this.state.notifications || []).find((n) => n.id === notificationId && n.studentId === studentId);
+    if (n) n.readAt = nowIso();
+  }
 }
 
 module.exports = {

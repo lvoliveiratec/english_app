@@ -153,6 +153,22 @@ async function handleAdminRoutes({ request, response, parsedUrl, storage }) {
     return true;
   }
 
+  // POST /api/admin/students/:studentId/notify
+  const notifyMatch = parsedUrl.pathname.match(/^\/api\/admin\/students\/([^/]+)\/notify$/);
+  if (request.method === "POST" && notifyMatch) {
+    const session = await requireAdmin(request, response, storage);
+    if (!session) return true;
+    const body = await readRequestBody(request);
+    const message = body.message?.toString().trim();
+    if (!message) {
+      sendJson(response, 400, { error: "message is required." });
+      return true;
+    }
+    await storage.sendStudentNotification(notifyMatch[1], { message, sentById: session.user.id });
+    sendJson(response, 201, { ok: true });
+    return true;
+  }
+
   return false;
 }
 
