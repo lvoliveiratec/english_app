@@ -115,6 +115,12 @@ let adminAssignmentOffset = ADMIN_PAGE_SIZE;
 const adminPendingPayments = document.querySelector("#adminPendingPayments");
 const adminActiveStudents = document.querySelector("#adminActiveStudents");
 const adminActivityList = document.querySelector("#adminActivityList");
+const adminStudentSearch = document.querySelector("#adminStudentSearch");
+const adminStudentLevelFilter = document.querySelector("#adminStudentLevelFilter");
+const adminStudentGoalFilter = document.querySelector("#adminStudentGoalFilter");
+const adminStudentTeacherFilter = document.querySelector("#adminStudentTeacherFilter");
+const adminStudentFilterInfo = document.querySelector("#adminStudentFilterInfo");
+const clearStudentFiltersBtn = document.querySelector("#clearStudentFiltersBtn");
 const adminStudentForm = document.querySelector("#adminStudentForm");
 const adminTeacherForm = document.querySelector("#adminTeacherForm");
 const adminPlanForm = document.querySelector("#adminPlanForm");
@@ -1411,19 +1417,13 @@ function updateAdminResources(resources) {
   adminState.plans = resources.plans || [];
   adminState.courses = resources.courses || [];
   renderAdminAssignmentOptions();
-
-  adminStudentRows.innerHTML = renderRows(
-    adminState.students,
-    "students",
-    (item) => [
-      item.fullName,
-      item.email,
-      item.level,
-      item.goal,
-      item.teacherName || "Unassigned",
-    ],
-    6,
-  );
+  populateStudentTeacherFilter();
+  renderFilteredStudents();
+  // reset filters on fresh load
+  if (adminStudentSearch) adminStudentSearch.value = "";
+  if (adminStudentLevelFilter) adminStudentLevelFilter.value = "";
+  if (adminStudentGoalFilter) adminStudentGoalFilter.value = "";
+  if (adminStudentTeacherFilter) adminStudentTeacherFilter.value = "";
   adminTeacherRows.innerHTML = renderRows(
     adminState.teachers,
     "teachers",
@@ -1443,6 +1443,53 @@ function updateAdminResources(resources) {
     5,
   );
   renderAssignmentRowsPaginated();
+}
+
+function populateStudentTeacherFilter() {
+  if (!adminStudentTeacherFilter) return;
+  const current = adminStudentTeacherFilter.value;
+  const teacherNames = [...new Set(
+    adminState.students
+      .map((s) => s.teacherName)
+      .filter(Boolean)
+  )].sort();
+
+  adminStudentTeacherFilter.innerHTML =
+    `<option value="">All teachers</option>` +
+    `<option value="__unassigned">Unassigned</option>` +
+    teacherNames.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+
+  if (current) adminStudentTeacherFilter.value = current;
+}
+
+function renderFilteredStudents() {
+  const query = (adminStudentSearch?.value || "").toLowerCase().trim();
+  const level = adminStudentLevelFilter?.value || "";
+  const goal = adminStudentGoalFilter?.value || "";
+  const teacher = adminStudentTeacherFilter?.value || "";
+
+  const filtered = adminState.students.filter((s) => {
+    if (query && !s.fullName.toLowerCase().includes(query) && !s.email.toLowerCase().includes(query)) return false;
+    if (level && s.level !== level) return false;
+    if (goal && s.goal !== goal) return false;
+    if (teacher === "__unassigned" && s.teacherName) return false;
+    if (teacher && teacher !== "__unassigned" && s.teacherName !== teacher) return false;
+    return true;
+  });
+
+  if (adminStudentFilterInfo) {
+    const total = adminState.students.length;
+    adminStudentFilterInfo.textContent = filtered.length < total
+      ? `Showing ${filtered.length} of ${total} students`
+      : "";
+  }
+
+  adminStudentRows.innerHTML = renderRows(
+    filtered,
+    "students",
+    (item) => [item.fullName, item.email, item.level, item.goal, item.teacherName || "Unassigned"],
+    6,
+  );
 }
 
 function renderAdminAssignmentOptions() {
@@ -1802,6 +1849,28 @@ if (loadMoreAssignmentsBtn) {
   loadMoreAssignmentsBtn.addEventListener("click", () => {
     adminAssignmentOffset += ADMIN_PAGE_SIZE;
     renderAssignmentRowsPaginated();
+  });
+}
+
+if (adminStudentSearch) {
+  adminStudentSearch.addEventListener("input", renderFilteredStudents);
+}
+if (adminStudentLevelFilter) {
+  adminStudentLevelFilter.addEventListener("change", renderFilteredStudents);
+}
+if (adminStudentGoalFilter) {
+  adminStudentGoalFilter.addEventListener("change", renderFilteredStudents);
+}
+if (adminStudentTeacherFilter) {
+  adminStudentTeacherFilter.addEventListener("change", renderFilteredStudents);
+}
+if (clearStudentFiltersBtn) {
+  clearStudentFiltersBtn.addEventListener("click", () => {
+    if (adminStudentSearch) adminStudentSearch.value = "";
+    if (adminStudentLevelFilter) adminStudentLevelFilter.value = "";
+    if (adminStudentGoalFilter) adminStudentGoalFilter.value = "";
+    if (adminStudentTeacherFilter) adminStudentTeacherFilter.value = "";
+    renderFilteredStudents();
   });
 }
 copyTeacherInviteButton.addEventListener("click", async () => {

@@ -1261,6 +1261,36 @@ blockquote {
   margin-bottom: 1.5rem;
 }
 
+.admin-search-bar {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, auto) auto;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: #f7fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.admin-search-bar input[type="text"] {
+  min-width: 0;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.admin-search-bar select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  background: #fff;
+  cursor: pointer;
+}
+
 .admin-pagination {
   display: flex;
   align-items: center;
